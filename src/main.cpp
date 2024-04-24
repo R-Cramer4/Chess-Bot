@@ -6,11 +6,13 @@
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow *window);
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
+Game *game = new Game();
 
 int main(){
 
@@ -31,25 +33,14 @@ int main(){
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
         cout << "Failed to initialize glad" << endl;
         return -1;
     }
 
-
-    // process vertex
-    /*
-    float vertices[] = {
-        // position           // colors         // texture coords
-        0.8f,  0.8f, 0.0f,  1.0f, 0.0f,  0.0f, 1.0f, 1.0f,  // top right
-        0.8f, -0.8f, 0.0f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,  // bottom right
-        -0.8f, -0.8f, 0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom left
-        -0.8f,  0.8f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f   // top left
-    };
-    */
     // game
-    Game *game = new Game();
     game->Init();
 
 
@@ -79,19 +70,11 @@ void processInput(GLFWwindow *window){
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
 }
-
-void displayPieces(Game *game){
-    for(int i = 0; i < 8; i++){
-        for(int j = 0; j < 8; j++){
-            // loop through the board
-            switch(game->board[i][j]){
-                case 'P':
-
-                    break;
-                default:
-                    break;
-            }
-        }
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
+        game->Update(x, y);
     }
-
 }
+

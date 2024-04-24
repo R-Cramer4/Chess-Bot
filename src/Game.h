@@ -1,39 +1,22 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "Piece.h"
+#include "glad/glad.h"
+#include <GLFW/glfw3.h>
 
 class Game{
     public:
         void Init();
         void Render();
+        void Update(double x, double y);
         
         unsigned int Width = 800;
         unsigned int Height = 800;
+        float boardW = 600.0;
+        float boardH = 600.0;
         
-
-
-        char board[8][8] = {
-            'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R',
-            'P', 'P', 'P', 'P', 'P', 'P' ,'P', 'P',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 
-            'P', 'P', 'P', 'P', 'P', 'P' ,'P', 'P',
-            'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R',
-        };
-        // 0 is black, 1 is white
-        int color[8][8] = {
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            -1, -1, -1, -1, -1, -1, -1, -1, 
-            -1, -1, -1, -1, -1, -1, -1, -1, 
-            -1, -1, -1, -1, -1, -1, -1, -1, 
-            -1, -1, -1, -1, -1, -1, -1, -1, 
-            1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1
-        };
-
+        Piece *board[8][8];
 };
 
 

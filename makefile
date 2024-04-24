@@ -4,7 +4,7 @@ GL= -L/opt/homebrew/Cellar/glfw/3.4/lib -lglfw3 -framework Cocoa -framework Open
 SRC = src
 OBJ = obj
 
-main: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o
+main: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o
 	g++ $^ ${INC} ${GL} $(FLAGS) -o main
 
 $(OBJ)/main.o: $(SRC)/main.cpp
@@ -24,6 +24,9 @@ $(OBJ)/Resources.o: $(SRC)/Resources.cpp $(SRC)/Resources.h
 
 $(OBJ)/SpriteRenderer.o: $(SRC)/SpriteRenderer.cpp $(SRC)/SpriteRenderer.h
 	g++ ${INC} ${FLAGS} -c $(SRC)/SpriteRenderer.cpp -o $@
+
+$(OBJ)/Piece.o: $(SRC)/Piece.cpp $(SRC)/Piece.h
+	g++ ${INC} ${FLAGS} -c $(SRC)/Piece.cpp -o $@
 
 clean:
 	rm -f $(OBJ)/*.o main
