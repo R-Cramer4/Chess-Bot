@@ -3,6 +3,7 @@
 #include "SpriteRenderer.h"
 #include "Board.h"
 #include <cstdio>
+#include <cstdlib>
 
 SpriteRenderer *renderer; 
 
@@ -27,7 +28,7 @@ void Game::Init(){
 
     turn = WHITE;
 
-    bitboard.generateBitBoards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    bitboard.generateBitBoards("");
     /*for(int i = 0; i < 2; i++){
         for(int j = 0; j < 6; j++){
             cout << std::bitset<64>(*actBoard.boards[i][j]) << endl;
@@ -72,6 +73,9 @@ void Game::Update(double x, double y){
     locy = y - ((Height - boardH) / 2); // goes to edge of board
     locy = locy / (boardH / 8); // now goes to pos
 
+    // invert y
+    locy = abs(locy - 7);
+
 
     // locx and locy hold the square that was clicked so now update the mask
     U64 temp = ((U64)1 << ((U64)(locy * 8) + (U64)locx));
@@ -82,6 +86,7 @@ void Game::Update(double x, double y){
         else {
             bitboard.movePiece(temp); // move piece
             turn = (turn == WHITE ? BLACK : WHITE);
+            bitboard.selectedPiece = 0;
         }
 
         bitboard.colorMask = 0;
@@ -102,7 +107,8 @@ void Game::Update(double x, double y){
 
 void Game::drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r){
     int locx = ((Width - boardW) / 2) + ((boardW / 8) * x);
-    int locy = ((Height - boardH) / 2) + ((boardH / 8) * y);
+    int locy = ((Height - boardH) / 2) + ((boardH / 8) * abs(y - 7));
+    // invert y so it draws properly
 
     r->DrawSprite(Resources::GetTexture(texture), glm::vec2(locx, locy), glm::vec2(boardW / 8, boardH / 8), 0.0f, glm::vec3((float)c));
 }

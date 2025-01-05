@@ -21,6 +21,17 @@ class quad{
         char piece;
 };
 
+const U64 aFile =         0x0101010101010101;
+const U64 abFile =        0x0303030303030303;
+const U64 hFile =         0x8080808080808080;
+const U64 ghFile =        0xC0C0C0C0C0C0C0C0;
+const U64 rank1 =         0x00000000000000FF;
+const U64 rank8 =         0xFF00000000000000;
+const U64 a1h8Diag =      0x8040201008040201;
+const U64 h1a8AntiDiag =  0x0102040810204080;
+const U64 lightSquares =  0x55AA55AA55AA55AA;
+const U64 darkSquares =   0xAA55AA55AA55AA55;
+
 class Board{
     public:
         // using a binary representation where the least significant bit is A1
@@ -60,7 +71,7 @@ class Board{
             {&blackQueens, BLACK, "queen", 'q'},
             {&blackKing, BLACK, "king", 'k'}
         };
-
+        
 
         void generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
         int findLoc(U64 x);
@@ -68,6 +79,13 @@ class Board{
 
         U64 generateMoves(U64 loc, char type, Color color);
         void movePiece(U64 newSpot);
+    private:
+        U64 getRookMove(U64 loc, Color color);
+        U64 getBishopMove(U64 loc, Color color);
+        U64 getQueenMove(U64 loc, Color color);
+        U64 getKingMove(U64 loc, Color color);
+        U64 getPawnMove(U64 loc, Color color);
+        U64 getKnightMove(U64 loc, Color color);
 };
 
 #endif

@@ -1,10 +1,12 @@
 #include "Board.h"
+#include <iostream>
 
 using namespace std;
 
 void Board::generateBitBoards(string fen){
     // https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
-    U64 rank = 0;
+    if(fen == "") fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    U64 rank = 7;
     U64 col = 0;
 
     string positions = fen.substr(0, fen.find(' '));
@@ -13,7 +15,7 @@ void Board::generateBitBoards(string fen){
         U64 pos = ((U64)1 << ((rank * (U64)8) + col));
         switch(fen[i]){
             case '/':
-                rank++;
+                rank--;
                 col = 0;
                 break;
             case '1':
@@ -104,7 +106,6 @@ void Board::generateBitBoards(string fen){
         }
     }
     // discards enpassant square, half move clock, and fullmove number
-
 }
 
 int Board::findLoc(U64 x){
@@ -112,77 +113,36 @@ int Board::findLoc(U64 x){
     while((x & 1) != 1){
         x = x >> 1;
         loc++;
+        if(loc > 63) return 0;
     }
     return loc;
 }
 void Board::printLoc(U64 x){
-    printf("0x%016llx\n", x);
+    printf("0x%016lu\n", x);
 }
 
 U64 Board::generateMoves(U64 loc, char piece, Color color){
-    U64 mask = 0; // this function will return all valid moves
-    
-    U64 notAFile = ~0x0101010101010101;
-    U64 notABFile = ~0x0303030303030303;
-    U64 notHFile = ~0x8080808080808080;
-    U64 notGHFile = ~0xC0C0C0C0C0C0C0C0;
-
-    printLoc(loc);
-
+    // gets all psudo-legal moves for the piece clicked
+    // doesnt check for pins yet or check at all
     switch(piece){
-        case 'n': // should work, knights
-            mask = mask | ((loc << 17) & notAFile);
-            mask = mask | ((loc << 10) & notABFile);
-            mask = mask | ((loc >> 6) & notABFile);
-            mask = mask | ((loc >> 15) & notAFile);
-
-            mask = mask | ((loc >> 17) & notHFile);
-            mask = mask | ((loc >> 10) & notGHFile);
-            mask = mask | ((loc << 6) & notGHFile);
-            mask = mask | ((loc << 15) & notHFile);
-            for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
-                mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
-            }
-            break;
+        case 'n':
+            return getKnightMove(loc, color);
         case 'p':
-            if(color == WHITE){
-                mask = mask | (loc >> 8); // not handling overflow
-                if(loc & 0x00ff000000000000) mask = mask | (loc >> 16);
-            }else{
-                mask = mask | (loc << 8);
-                if(loc & 0x00ff00) mask = mask | (loc << 16);
-            }
-            // TODO enpassant, capture, also what happens when it gets to the end
-            // TODO also cant capture forwards
-            for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
-                mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
-            }
-            break;
+            return getPawnMove(loc, color);
         case 'b':
-
-            break;
+            return getBishopMove(loc, color);
         case 'r':
-            mask |= (0xff << (loc & 56)); // need to shift by rank 0x01-0x0100
-            mask |= (0x0101010101010101 << (loc & 7)); // need to shift by file, 0x01-0x80
-            printLoc(loc & 56);
-            printLoc(loc & 7);
-            // doesnt work properly
-            // need to cut off the ray
-            break;
+            return getRookMove(loc, color);
         case 'q':
-
-            break;
+            return getQueenMove(loc, color);
         case 'k':
-
-            break;
+            return getKingMove(loc, color);
     }
-
-
-
-
-    return mask;
+    cout << "Something went wrong, no piece was called" << endl;
+    return 0;
 }
 void Board::movePiece(U64 newSpot){
+    if(newSpot & selectedPiece) return;
     // selected piece has the old piece
     // and we have the spot we are moving to
 
@@ -199,4 +159,107 @@ void Board::movePiece(U64 newSpot){
             *boards[i].i |= newSpot;
         }
     }
+}
+U64 Board::getRookMove(U64 loc, Color color){
+    U64 mask = 0;
+    int sq = findLoc(loc);
+
+    mask |= ((U64)0xff << (sq & 56)); // need to shift by rank 0x01-0x0100
+    mask |= ((U64)0x0101010101010101 << (sq & 7)); // need to shift by file, 0x01-0x80
+    // TODO need to cut off the ray
+    return mask;
+}
+U64 Board::getBishopMove(U64 loc, Color color){
+    U64 mask = 0;
+    int sq = findLoc(loc);
+
+    int diag = 8*(sq & 7) - (sq & 56);
+    int nort = -diag & (diag >> 31);
+    int sout = diag & (-diag >> 31);
+    mask |= (a1h8Diag >> sout) << nort;
+
+    diag = 56 - 8*(sq & 7) - (sq & 56);
+    nort = -diag & (diag >> 31);
+    sout = diag & (-diag >> 31);
+    mask |= (h1a8AntiDiag >> sout) << nort;
+    
+    // TODO cut off rays
+
+    return mask;
+}
+U64 Board::getQueenMove(U64 loc, Color color){
+    U64 mask = 0;
+    int sq = findLoc(loc);
+
+    mask |= ((U64)0xff << (sq & 56)); // need to shift by rank 0x01-0x0100
+    mask |= ((U64)0x0101010101010101 << (sq & 7)); // need to shift by file, 0x01-0x80
+
+    int diag = 8*(sq & 7) - (sq & 56);
+    int nort = -diag & (diag >> 31);
+    int sout = diag & (-diag >> 31);
+    mask |= (a1h8Diag >> sout) << nort;
+
+    diag = 56 - 8*(sq & 7) - (sq & 56);
+    nort = -diag & (diag >> 31);
+    sout = diag & (-diag >> 31);
+    mask |= (h1a8AntiDiag >> sout) << nort;
+
+    // TODO cut off ray
+
+    return mask;
+}
+U64 Board::getKingMove(U64 loc, Color color){
+    // TODO check for if will be in check
+    U64 mask = 0;
+    mask |= ((loc << 1) & ~aFile) | ((loc >> 1) & ~hFile); // side to side
+    mask |= (loc << 8) | (loc >> 8); // up and down
+    mask |= ((loc << 7) & ~hFile) | ((loc << 9) & ~aFile); // diags
+    mask |= ((loc >> 7) & ~aFile) | ((loc >> 9) & ~hFile); // lower diags
+
+    for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
+        mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
+    }
+    return mask;
+}
+U64 Board::getPawnMove(U64 loc, Color color){
+    U64 mask = 0;
+
+    if(color == WHITE){
+        mask = mask | (loc << 8); // not handling overflow
+        if(loc & 0x000000000000ff00) mask |= (loc << 16);
+    }else{
+        mask = mask | (loc >> 8);
+        if(loc & 0x00ff000000000000) mask |= (loc >> 16);
+    }
+    // TODO enpassant, also what happens when it gets to the end
+    // TODO can jump over pieces for first move
+    U64 attack = 0;
+    if(color == WHITE) attack = (loc << 7) | (loc << 9);
+    else attack = (loc >> 7) | (loc >> 9);
+
+    U64 opponentPieces = 0;
+    for(int i = 0 ; i < 12; i++){
+        mask ^= (mask & *boards[i].i); // cant capture forwards
+        if(boards[i].col != color) opponentPieces |= *boards[i].i;
+    }
+    attack = attack & opponentPieces;
+    return mask | attack;
+}
+U64 Board::getKnightMove(U64 loc, Color color){
+    // Done (No actual testing though)
+    U64 mask = 0;
+
+    mask = mask | ((loc << 17) & ~aFile);
+    mask = mask | ((loc << 10) & ~abFile);
+    mask = mask | ((loc >> 6) & ~abFile);
+    mask = mask | ((loc >> 15) & ~aFile);
+
+    mask = mask | ((loc >> 17) & ~hFile);
+    mask = mask | ((loc >> 10) & ~ghFile);
+    mask = mask | ((loc << 6) & ~ghFile);
+    mask = mask | ((loc << 15) & ~hFile);
+    for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
+        mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
+    }
+    return mask;
 }
