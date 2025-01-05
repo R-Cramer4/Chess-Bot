@@ -1,0 +1,10 @@
+Chess Game written with OpenGL and C++
+
+Playble game, most valid moves are implemented
+
+Not implemented:
+- Castling
+- Check
+- Pins and moves that would leave the king in check
+- Draw by repititon
+- the end of the game (right now nothing happens upon king capture)

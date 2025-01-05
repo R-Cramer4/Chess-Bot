@@ -129,7 +129,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color){
             // done, no testing
             return getKnightMove(loc, color);
         case 'p':
-            // TODO enpassant
+            // done, no testing
             return getPawnMove(loc, color);
         case 'b':
             // done no testing
@@ -142,6 +142,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color){
             return getQueenMove(loc, color);
         case 'k':
             // TODO need to check for if that would be in check
+            // TODO castling
             return getKingMove(loc, color);
     }
     cout << "Something went wrong, no piece was called" << endl;
@@ -256,6 +257,7 @@ U64 Board::getQueenMove(U64 loc, Color color){
 }
 U64 Board::getKingMove(U64 loc, Color color){
     // TODO check for if will be in check
+    // TODO castling
     U64 mask = 0;
     mask |= ((loc << 1) & ~aFile) | ((loc >> 1) & ~hFile); // side to side
     mask |= (loc << 8) | (loc >> 8); // up and down
