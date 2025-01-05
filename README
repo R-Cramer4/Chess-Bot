@@ -4,7 +4,7 @@ Playble game, most valid moves are implemented
 
 Not implemented:
 - Castling
-- Check
-- Pins and moves that would leave the king in check
+- Check (works most of the time)
+- Pins and moves that would leave the king in check (Also works most of the time)
 - Draw by repititon
 - the end of the game (right now nothing happens upon king capture)

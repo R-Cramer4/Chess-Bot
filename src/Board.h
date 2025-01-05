@@ -5,7 +5,7 @@
 #include <string>
 
 typedef uint64_t U64;
-enum Color {BLACK, WHITE};
+enum Color {BLACK, WHITE, NONE};
 
 class quad{
     public:
@@ -63,6 +63,9 @@ class Board{
         bool blackCastleKing = 1;
         bool blackCastleQueen = 1;
 
+        bool whiteInCheck = 0;
+        bool blackInCheck = 0;
+
         quad boards[12] = {
             {&whitePawns, WHITE, "pawn", 'p'},
             {&whiteKnights, WHITE, "knight", 'n'},
@@ -83,8 +86,10 @@ class Board{
         int findLoc(U64 x);
         void printLoc(U64 x);
 
-        U64 generateMoves(U64 loc, char type, Color color);
+        U64 generateMoves(U64 loc, char type, Color color, bool top);
         void movePiece(U64 newSpot);
+        Board(){}
+        Board(Board &ref);
     private:
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);
@@ -94,6 +99,7 @@ class Board{
         U64 getKnightMove(U64 loc, Color color);
 
         U64 getActualRay(U64 loc, U64 ray, Color color);
+        Color isKingInCheck();
 };
 
 #endif

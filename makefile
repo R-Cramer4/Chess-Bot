@@ -1,4 +1,4 @@
-FLAGS = -std=c++20 -g
+FLAGS = -std=c++20 -g -O1
 INC_MAC= -I/Users/jake/Documents/Jake/computer-science/cpp/quantum_chess/include -I/opt/homebrew/include -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks 
 GL_MAC= -L/opt/homebrew/Cellar/glfw/3.4/lib -lglfw3 -framework Cocoa -framework OpenGL -framework IOKit
 INC_LINUX= -Iinclude

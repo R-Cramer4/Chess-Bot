@@ -89,7 +89,7 @@ void Board::generateBitBoards(string fen){
             case 'w':
                 turn = 'w';
                 break;
-            case 'b':
+case 'b':
                 turn = 'b';
                 break;
             case 'K':
@@ -108,6 +108,33 @@ void Board::generateBitBoards(string fen){
     // discards enpassant square, half move clock, and fullmove number
 }
 
+Board::Board(Board &ref){
+    this->whitePawns = ref.whitePawns;
+    this->whiteKnights = ref.whiteKnights;
+    this->whiteBishops = ref.whiteBishops;
+    this->whiteRooks = ref.whiteRooks;
+    this->whiteQueens = ref.whiteQueens;
+    this->whiteKing = ref.whiteKing;
+
+    this->blackPawns = ref.blackPawns;
+    this->blackKnights = ref.blackKnights;
+    this->blackBishops = ref.blackBishops;
+    this->blackRooks = ref.blackRooks;
+    this->blackQueens = ref.blackQueens;
+    this->blackKing = ref.blackKing;
+    
+    this->enpassantBlack = ref.enpassantBlack;
+    this->enpassantWhite = ref.enpassantWhite;
+
+    this->whiteCastleKing = ref.whiteCastleKing;
+    this->whiteCastleQueen = ref.whiteCastleQueen;
+    this->blackCastleKing = ref.blackCastleKing;
+    this->blackCastleQueen = ref.blackCastleQueen;
+
+    this->selectedPiece.piece = ref.selectedPiece.piece;
+    this->selectedPiece.col = ref.selectedPiece.col;
+    this->selecPieceLoc = ref.selecPieceLoc;
+}
 int Board::findLoc(U64 x){
     int loc = 0;
     while((x & 1) != 1){
@@ -121,32 +148,54 @@ void Board::printLoc(U64 x){
     printf("0x%016lu\n", x);
 }
 
-U64 Board::generateMoves(U64 loc, char piece, Color color){
-    // gets all psudo-legal moves for the piece clicked
-    // doesnt check for pins yet or check at all
+U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
+    // if top, generates pseudo legal moves
+    // otherwise it generates all legal moves
+    U64 mask = 0;
     switch(piece){
         case 'n':
             // done, no testing
-            return getKnightMove(loc, color);
+            mask = getKnightMove(loc, color);
+            break;
         case 'p':
             // done, no testing
-            return getPawnMove(loc, color);
+            mask = getPawnMove(loc, color);
+            break;
         case 'b':
             // done no testing
-            return getBishopMove(loc, color);
+            mask = getBishopMove(loc, color);
+            break;
         case 'r':
             // done no testing
-            return getRookMove(loc, color);
+            mask = getRookMove(loc, color);
+            break;
         case 'q':
             // done no testing
-            return getQueenMove(loc, color);
+            mask = getQueenMove(loc, color);
+            break;
         case 'k':
             // TODO need to check for if that would be in check
             // TODO castling
-            return getKingMove(loc, color);
+            mask = getKingMove(loc, color);
+            break;
     }
-    cout << "Something went wrong, no piece was called" << endl;
-    return 0;
+    if(!top) return mask;
+    Board next(*this);
+    // go through each move and check if it would leave the king in check
+    // TODO this is bugging but kinda works
+    for(int i = 0; i < 63; i++){
+        U64 move = (U64)1 << i;
+        if(mask & move){
+            // this is a valid move
+            next.movePiece(move); // need to unmove maybe
+            Color isCheck = next.isKingInCheck();
+            if(color == isCheck){
+                // left our own king in check
+                mask ^= move; 
+            }
+        }
+    }
+    return mask;
 }
 void Board::movePiece(U64 newSpot){
     if(newSpot & *selectedPiece.i) return;
@@ -216,6 +265,13 @@ void Board::movePiece(U64 newSpot){
 
     *boards[board].i ^= *selectedPiece.i;
     *boards[board].i |= newSpot;
+    // check if other king is in check
+    Color col = isKingInCheck();
+    if(col == NONE) return;
+    if(selectedPiece.col != col){
+        if(col == WHITE) whiteInCheck = true;
+        else blackInCheck = true;
+    }
 }
 U64 Board::getRookMove(U64 loc, Color color){
     U64 mask = 0;
@@ -346,16 +402,37 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     }
     // locMin is most significant less than sq
     // locMax is least significant greater than sq
-    cout << locMin << " : " << sq << " : " << locMax << endl; 
     U64 mask = 0xFFFFFFFFFFFFFFFF;
-    cout << ray << endl;
     if(locMax != -1) ray = ray & (mask >> (63 - locMax));
-    cout << ray << endl;
     // shifts to the right so everything more significant than locMax is a 0
     if(locMin != -1) ray = ray & (mask << locMin); // same deal
-    cout << ray << endl;
 
     ray = ray & ~(ray & colPieces); // shouldnt be able to capture own pieces
 
     return ray;
+}
+Color Board::isKingInCheck(){
+    // returns the color of one of the kings if it is in check
+    //
+    // generate moves for every piece on the board
+    // if one of those moves intersects with the king of the color
+    // return that color
+
+    for(int i = 0; i < 12; i++){
+        // loop through each bitboard
+        for(int k = 0; k < 63; k++){
+            if(*boards[i].i >> k & 1){
+                // there is a piece here
+                U64 mask = generateMoves((U64)1 << k, boards[i].piece, boards[i].col, false);
+                // has all moves of this piece
+                if(boards[i].col == WHITE){
+                    // check if it intersects with the black king
+                    if(*boards[11].i & mask) return BLACK;
+                }else{
+                    if(*boards[5].i & mask) return WHITE;
+                }
+            }
+        }
+    }
+    return NONE;
 }
