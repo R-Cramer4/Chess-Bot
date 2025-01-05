@@ -109,11 +109,94 @@ void Board::generateBitBoards(string fen){
 
 int Board::findLoc(U64 x){
     int loc = 0;
-
     while((x & 1) != 1){
         x = x >> 1;
         loc++;
     }
-
     return loc;
+}
+void Board::printLoc(U64 x){
+    printf("0x%016llx\n", x);
+}
+
+U64 Board::generateMoves(U64 loc, char piece, Color color){
+    U64 mask = 0; // this function will return all valid moves
+    
+    U64 notAFile = ~0x0101010101010101;
+    U64 notABFile = ~0x0303030303030303;
+    U64 notHFile = ~0x8080808080808080;
+    U64 notGHFile = ~0xC0C0C0C0C0C0C0C0;
+
+    printLoc(loc);
+
+    switch(piece){
+        case 'n': // should work, knights
+            mask = mask | ((loc << 17) & notAFile);
+            mask = mask | ((loc << 10) & notABFile);
+            mask = mask | ((loc >> 6) & notABFile);
+            mask = mask | ((loc >> 15) & notAFile);
+
+            mask = mask | ((loc >> 17) & notHFile);
+            mask = mask | ((loc >> 10) & notGHFile);
+            mask = mask | ((loc << 6) & notGHFile);
+            mask = mask | ((loc << 15) & notHFile);
+            for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
+                mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
+            }
+            break;
+        case 'p':
+            if(color == WHITE){
+                mask = mask | (loc >> 8); // not handling overflow
+                if(loc & 0x00ff000000000000) mask = mask | (loc >> 16);
+            }else{
+                mask = mask | (loc << 8);
+                if(loc & 0x00ff00) mask = mask | (loc << 16);
+            }
+            // TODO enpassant, capture, also what happens when it gets to the end
+            // TODO also cant capture forwards
+            for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
+                mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
+            }
+            break;
+        case 'b':
+
+            break;
+        case 'r':
+            mask |= (0xff << (loc & 56)); // need to shift by rank 0x01-0x0100
+            mask |= (0x0101010101010101 << (loc & 7)); // need to shift by file, 0x01-0x80
+            printLoc(loc & 56);
+            printLoc(loc & 7);
+            // doesnt work properly
+            // need to cut off the ray
+            break;
+        case 'q':
+
+            break;
+        case 'k':
+
+            break;
+    }
+
+
+
+
+    return mask;
+}
+void Board::movePiece(U64 newSpot){
+    // selected piece has the old piece
+    // and we have the spot we are moving to
+
+    // need to check if the newSpot is in the other pieces
+    for(int i = 0; i < 12; i++){
+        if((*boards[i].i & newSpot) != 0){
+            *boards[i].i ^= newSpot; // removes that piece
+        }
+    }
+    for(int i = 0; i < 12; i++){
+        if((*boards[i].i & selectedPiece) != 0){
+            // this is our board
+            *boards[i].i ^= selectedPiece;
+            *boards[i].i |= newSpot;
+        }
+    }
 }

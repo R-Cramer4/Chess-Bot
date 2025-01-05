@@ -2,6 +2,7 @@
 #include "Resources.h"
 #include "SpriteRenderer.h"
 #include "Board.h"
+#include <cstdio>
 
 SpriteRenderer *renderer; 
 
@@ -24,43 +25,7 @@ void Game::Init(){
     Resources::LoadTexture("textures/mask.png", true, "mask");
 
 
-    turn = 1;
-    // Board Init
-    board[0][0] = new Piece(0, 0, 0, 'R', "rook", this); 
-    board[1][0] = new Piece(1, 0, 0, 'N', "knight", this);
-    board[2][0] = new Piece(2, 0, 0, 'B', "bishop", this);
-    board[3][0] = new Piece(3, 0, 0, 'Q', "queen", this);
-    board[4][0] = new Piece(4, 0, 0, 'K', "king", this);
-    board[5][0] = new Piece(5, 0, 0, 'B', "bishop", this);
-    board[6][0] = new Piece(6, 0, 0, 'N', "knight", this);
-    board[7][0] = new Piece(7, 0, 0, 'R', "rook", this);
-
-    board[0][1] = new Piece(0, 1, 0, 'P', "pawn", this);
-    board[1][1] = new Piece(1, 1, 0, 'P', "pawn", this);
-    board[2][1] = new Piece(2, 1, 0, 'P', "pawn", this);
-    board[3][1] = new Piece(3, 1, 0, 'P', "pawn", this);
-    board[4][1] = new Piece(4, 1, 0, 'P', "pawn", this);
-    board[5][1] = new Piece(5, 1, 0, 'P', "pawn", this);
-    board[6][1] = new Piece(6, 1, 0, 'P', "pawn", this);
-    board[7][1] = new Piece(7, 1, 0, 'P', "pawn", this);
-
-    board[0][6] = new Piece(0, 6, 1, 'P', "pawn", this);
-    board[1][6] = new Piece(1, 6, 1, 'P', "pawn", this);
-    board[2][6] = new Piece(2, 6, 1, 'P', "pawn", this);
-    board[3][6] = new Piece(3, 6, 1, 'P', "pawn", this);
-    board[4][6] = new Piece(4, 6, 1, 'P', "pawn", this);
-    board[5][6] = new Piece(5, 6, 1, 'P', "pawn", this);
-    board[6][6] = new Piece(6, 6, 1, 'P', "pawn", this);
-    board[7][6] = new Piece(7, 6, 1, 'P', "pawn", this);
-
-    board[0][7] = new Piece(0, 7, 1, 'R', "rook", this);
-    board[1][7] = new Piece(1, 7, 1, 'N', "knight", this);
-    board[2][7] = new Piece(2, 7, 1, 'B', "bishop", this);
-    board[3][7] = new Piece(3, 7, 1, 'Q', "queen", this);
-    board[4][7] = new Piece(4, 7, 1, 'K', "king", this);
-    board[5][7] = new Piece(5, 7, 1, 'B', "bishop", this);
-    board[6][7] = new Piece(6, 7, 1, 'N', "knight", this);
-    board[7][7] = new Piece(7, 7, 1, 'R', "rook", this);
+    turn = WHITE;
 
     bitboard.generateBitBoards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     /*for(int i = 0; i < 2; i++){
@@ -75,16 +40,6 @@ void Game::Init(){
 }
 void Game::Render(){
     renderer->DrawSprite(Resources::GetTexture("board"), glm::vec2(100.0f, 100.0f), glm::vec2(600.0f, 600.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
-
-    /*
-    for(int i = 0; i < 8; i++){
-        for(int j = 0; j < 8; j++){
-            if(board[i][j] != nullptr){
-                board[i][j]->Draw(renderer);
-            }
-        }
-    }
-    */
     U64 temp;
     // color mask
     temp = bitboard.colorMask;
@@ -95,13 +50,14 @@ void Game::Render(){
         // temp - 1 << loc
         temp = temp - ((U64)1 << (U64)loc);
     }
+    
     for(int i = 0; i < 12; i++){ // go through all bitboards
         temp = *bitboard.boards[i].i;
         while(temp != 0){
             int loc = bitboard.findLoc(temp);
             // find location with x and y
             // draw the piece
-            drawPiece(loc % 8, loc / 8, bitboard.boards[i].c, bitboard.boards[i].s, renderer);
+            drawPiece(loc % 8, loc / 8, bitboard.boards[i].col, bitboard.boards[i].texture, renderer);
 
             // temp - 1 << loc
             temp = temp - ((U64)1 << (U64)loc);
@@ -116,36 +72,32 @@ void Game::Update(double x, double y){
     locy = y - ((Height - boardH) / 2); // goes to edge of board
     locy = locy / (boardH / 8); // now goes to pos
 
-    // now check to see if anything ids selected
-    /* code for when it was pieces and not bit boards
-    for(int i = 0; i < 8; i++){
-        for(int j = 0; j < 8; j++){
-            if(board[i][j] != nullptr && board[i][j]->isClicked){
-                board[i][j]->isClicked = false;
-                // TODO check valid move and check for capture
 
-                // swaps pieces
-                Piece *temp = board[i][j];
-                board[i][j] = board[locx][locy];
-                if(board[i][j] != nullptr) board[i][j]->UpdatePos(i, j, this);
-                board[locx][locy] = temp;
-                if(board[locx][locy] != nullptr) board[locx][locy]->UpdatePos(locx, locy, this);
-                turn = !turn; // swaps turns
+    // locx and locy hold the square that was clicked so now update the mask
+    U64 temp = ((U64)1 << ((U64)(locy * 8) + (U64)locx));
 
-                // here if it is an ai, we need to call its move
-                return;
+    // generate potential moves if we click on a piece
+    if((bitboard.colorMask & temp) != 0){
+        if(bitboard.selectedPiece == temp) bitboard.selectedPiece = 0; // clicked the same piece
+        else {
+            bitboard.movePiece(temp); // move piece
+            turn = (turn == WHITE ? BLACK : WHITE);
+        }
+
+        bitboard.colorMask = 0;
+    }else if(bitboard.selectedPiece != 0){
+        // we clicked on somewhere we cant go
+        bitboard.selectedPiece = 0;
+        bitboard.colorMask = temp;
+    }else{
+        for(int i = 0; i < 12; i++){
+            if(bitboard.boards[i].col == turn && *bitboard.boards[i].i == (*bitboard.boards[i].i | temp)){
+                bitboard.selectedPiece = temp;
+                // If the piece bitboard | loc, this bitboard has been clicked
+                bitboard.colorMask = bitboard.generateMoves(temp, bitboard.boards[i].piece, bitboard.boards[i].col);
             }
         }
     }
-    // this gets clicked now
-    if(board[locx][locy] != nullptr){
-        if(board[locx][locy]->color == turn) board[locx][locy]->isClicked = true;
-        else cout << "not your turn, it is " << turn << "'s turn" << endl;
-    }
-    */
-
-    // locx and locy hold the square that was clicked so now update the mask
-    bitboard.colorMask ^= ((U64)1 << ((U64)(locy * 8) + (U64)locx));
 }
 
 void Game::drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r){

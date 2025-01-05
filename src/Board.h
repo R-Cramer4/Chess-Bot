@@ -7,16 +7,18 @@
 typedef uint64_t U64;
 enum Color {BLACK, WHITE};
 
-class triple{
+class quad{
     public:
-        triple(U64* i, Color c, std::string s){
+        quad(U64* i, Color c, std::string s, char p){
             this->i = i;
-            this->c = c;
-            this->s = s;
+            this->col = c;
+            this->texture = s;
+            this->piece = p;
         }
         U64* i;
-        Color c;
-        std::string s;
+        Color col;
+        std::string texture;
+        char piece;
 };
 
 class Board{
@@ -39,25 +41,33 @@ class Board{
         U64 blackKing = 0;
 
         U64 colorMask = 0;
+        U64 selectedPiece = 0;
 
-        triple boards[12] = {
-            {&whitePawns, WHITE, "pawn"},
-            {&whiteKnights, WHITE, "knight"},
-            {&whiteBishops, WHITE, "bishop"},
-            {&whiteRooks, WHITE, "rook"},
-            {&whiteQueens, WHITE, "queen"},
-            {&whiteKing, WHITE, "king"},
-            {&blackPawns, BLACK, "pawn"},
-            {&blackKnights, BLACK, "knight"},
-            {&blackBishops, BLACK, "bishop"},
-            {&blackRooks, BLACK, "rook"},
-            {&blackQueens, BLACK, "queen"},
-            {&blackKing, BLACK, "king"}
+        bool whiteCastle = 1;
+        bool blackCastle = 1;
+
+        quad boards[12] = {
+            {&whitePawns, WHITE, "pawn", 'p'},
+            {&whiteKnights, WHITE, "knight", 'n'},
+            {&whiteBishops, WHITE, "bishop", 'b'},
+            {&whiteRooks, WHITE, "rook", 'r'},
+            {&whiteQueens, WHITE, "queen", 'q'},
+            {&whiteKing, WHITE, "king", 'k'},
+            {&blackPawns, BLACK, "pawn", 'p'},
+            {&blackKnights, BLACK, "knight", 'n'},
+            {&blackBishops, BLACK, "bishop", 'b'},
+            {&blackRooks, BLACK, "rook", 'r'},
+            {&blackQueens, BLACK, "queen", 'q'},
+            {&blackKing, BLACK, "king", 'k'}
         };
 
 
         void generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
         int findLoc(U64 x);
+        void printLoc(U64 x);
+
+        U64 generateMoves(U64 loc, char type, Color color);
+        void movePiece(U64 newSpot);
 };
 
 #endif
