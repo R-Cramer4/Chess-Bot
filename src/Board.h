@@ -52,10 +52,16 @@ class Board{
         U64 blackKing = 0;
 
         U64 colorMask = 0;
-        U64 selectedPiece = 0;
+        U64 selecPieceLoc = 0;
+        quad selectedPiece = {&selecPieceLoc, WHITE, "", 'p'};
 
-        bool whiteCastle = 1;
-        bool blackCastle = 1;
+        U64 enpassantBlack = 0;
+        U64 enpassantWhite = 0;
+
+        bool whiteCastleKing = 1;
+        bool whiteCastleQueen = 1;
+        bool blackCastleKing = 1;
+        bool blackCastleQueen = 1;
 
         quad boards[12] = {
             {&whitePawns, WHITE, "pawn", 'p'},

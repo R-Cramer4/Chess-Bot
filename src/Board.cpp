@@ -126,23 +126,29 @@ U64 Board::generateMoves(U64 loc, char piece, Color color){
     // doesnt check for pins yet or check at all
     switch(piece){
         case 'n':
+            // done, no testing
             return getKnightMove(loc, color);
         case 'p':
+            // TODO enpassant
             return getPawnMove(loc, color);
         case 'b':
+            // done no testing
             return getBishopMove(loc, color);
         case 'r':
+            // done no testing
             return getRookMove(loc, color);
         case 'q':
+            // done no testing
             return getQueenMove(loc, color);
         case 'k':
+            // TODO need to check for if that would be in check
             return getKingMove(loc, color);
     }
     cout << "Something went wrong, no piece was called" << endl;
     return 0;
 }
 void Board::movePiece(U64 newSpot){
-    if(newSpot & selectedPiece) return;
+    if(newSpot & *selectedPiece.i) return;
     // selected piece has the old piece
     // and we have the spot we are moving to
 
@@ -152,13 +158,63 @@ void Board::movePiece(U64 newSpot){
             *boards[i].i ^= newSpot; // removes that piece
         }
     }
-    for(int i = 0; i < 12; i++){
-        if((*boards[i].i & selectedPiece) != 0){
-            // this is our board
-            *boards[i].i ^= selectedPiece;
-            *boards[i].i |= newSpot;
-        }
+    int board = 0;
+    switch (selectedPiece.piece){
+        case 'p':
+            board = 0;
+            break;
+        case 'n':
+            board = 1;
+            break;
+        case 'b':
+            board = 2;
+            break;
+        case 'r':
+            board = 3;
+            break;
+        case 'q':
+            board = 4;
+            break;
+        case 'k':
+            board = 5;
+            break;
     }
+    if(selectedPiece.col == BLACK) board += 6;
+    // deal with enpassant here, adding and removing squares
+    if(selectedPiece.piece == 'p'){
+        // need to check for capture by enpassant first
+        if(newSpot & enpassantWhite){
+            // a white pawn just got captured by a black pawn
+            *boards[board - 6].i ^= (newSpot << 8);
+            enpassantWhite ^= newSpot;
+
+        }else if(newSpot & enpassantBlack){
+            // a black pawn just got captured
+            *boards[board + 6].i ^= (newSpot >> 8);
+            enpassantBlack ^= newSpot;
+
+        }
+        // if we can shift 16 and get the new spot we add an enpassant square
+        // if we can shift back 8 and theres an enpassant square, remove it
+        if(selectedPiece.col == WHITE){
+            // check to create new squares
+            if(*selectedPiece.i << 16 == newSpot) enpassantWhite = *selectedPiece.i << 8;
+            // check for old squares
+            if(((*selectedPiece.i >> 8) & enpassantWhite) != 0) 
+                enpassantWhite ^= (*selectedPiece.i >> 8);
+        }else{
+            if(*selectedPiece.i >> 16 == newSpot) enpassantBlack = *selectedPiece.i >> 8;
+            // check for old squares
+            if(((*selectedPiece.i << 8) & enpassantBlack) != 0) 
+                enpassantBlack ^= (*selectedPiece.i << 8);
+        }
+    }else{
+        enpassantBlack = 0;
+        enpassantWhite = 0;
+    }
+
+    *boards[board].i ^= *selectedPiece.i;
+    *boards[board].i |= newSpot;
 }
 U64 Board::getRookMove(U64 loc, Color color){
     U64 mask = 0;
@@ -222,7 +278,6 @@ U64 Board::getPawnMove(U64 loc, Color color){
         if(loc & 0x00ff000000000000) mask |= (loc >> 16);
     }
     // TODO enpassant, also what happens when it gets to the end
-    // TODO can jump over pieces for first move
     U64 attack = 0;
     if(color == WHITE) attack = (loc << 7) | (loc << 9);
     else attack = (loc >> 7) | (loc >> 9);
@@ -232,11 +287,23 @@ U64 Board::getPawnMove(U64 loc, Color color){
         mask ^= (mask & *boards[i].i); // cant capture forwards
         if(boards[i].col != color) opponentPieces |= *boards[i].i;
     }
+    if(color == WHITE) opponentPieces |= enpassantBlack;
+    else opponentPieces |= enpassantWhite;
+
     attack = attack & opponentPieces;
-    return mask | attack;
+    mask |= attack;
+
+    // handling jump error
+    if(mask & (loc << 16)){
+        // if can move twice
+        if(!(mask & (loc << 8))) mask ^= (loc << 16); // cant move twice if cant move once
+    }else if(mask & (loc >> 16)){
+        // if can move twice
+        if(!(mask & (loc >> 8))) mask ^= (loc >> 16); // cant move twice if cant move once
+    }
+    return mask;
 }
 U64 Board::getKnightMove(U64 loc, Color color){
-    // Done (No actual testing though)
     U64 mask = 0;
 
     mask = mask | ((loc << 17) & ~aFile);
@@ -286,8 +353,7 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     if(locMin != -1) ray = ray & (mask << locMin); // same deal
     cout << ray << endl;
 
-    ray = ray & ~(ray & colPieces);
-
+    ray = ray & ~(ray & colPieces); // shouldnt be able to capture own pieces
 
     return ray;
 }

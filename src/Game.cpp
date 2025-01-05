@@ -4,6 +4,7 @@
 #include "Board.h"
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 
 SpriteRenderer *renderer; 
 
@@ -78,28 +79,34 @@ void Game::Update(double x, double y){
 
 
     // locx and locy hold the square that was clicked so now update the mask
-    U64 temp = ((U64)1 << ((U64)(locy * 8) + (U64)locx));
+    U64 loc = ((U64)1 << ((U64)(locy * 8) + (U64)locx));
 
     // generate potential moves if we click on a piece
-    if((bitboard.colorMask & temp) != 0){
-        if(bitboard.selectedPiece == temp) bitboard.selectedPiece = 0; // clicked the same piece
-        else {
-            bitboard.movePiece(temp); // move piece
+    if((bitboard.colorMask & loc) != 0){
+        if(*bitboard.selectedPiece.i != loc){
+            // we didnt click on the same piece twice
+            
+            bitboard.movePiece(loc); // move piece
             turn = (turn == WHITE ? BLACK : WHITE);
-            bitboard.selectedPiece = 0;
+            *bitboard.selectedPiece.i = 0;
         }
-
         bitboard.colorMask = 0;
-    }else if(bitboard.selectedPiece != 0){
-        // we clicked on somewhere we cant go
-        bitboard.selectedPiece = 0;
-        bitboard.colorMask = temp;
     }else{
+        // clicked somewhere not in the mask already
+
+        *bitboard.selectedPiece.i = 0; // sets to be 0 if not already
         for(int i = 0; i < 12; i++){
-            if(bitboard.boards[i].col == turn && *bitboard.boards[i].i == (*bitboard.boards[i].i | temp)){
-                bitboard.selectedPiece = temp;
+            if(bitboard.boards[i].col == turn && 
+                *bitboard.boards[i].i == (*bitboard.boards[i].i | loc)){
+
+                // update the selected piece
+                *bitboard.selectedPiece.i = loc;
+                bitboard.selectedPiece.piece = bitboard.boards[i].piece;
+                bitboard.selectedPiece.col = bitboard.boards[i].col;
+
                 // If the piece bitboard | loc, this bitboard has been clicked
-                bitboard.colorMask = bitboard.generateMoves(temp, bitboard.boards[i].piece, bitboard.boards[i].col);
+                bitboard.colorMask = bitboard.generateMoves(loc, bitboard.boards[i].piece, bitboard.boards[i].col);
+                bitboard.colorMask |= loc;
             }
         }
     }
