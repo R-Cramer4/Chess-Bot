@@ -86,6 +86,8 @@ class Board{
         U64 getKingMove(U64 loc, Color color);
         U64 getPawnMove(U64 loc, Color color);
         U64 getKnightMove(U64 loc, Color color);
+
+        U64 getActualRay(U64 loc, U64 ray, Color color);
 };
 
 #endif

@@ -164,9 +164,11 @@ U64 Board::getRookMove(U64 loc, Color color){
     U64 mask = 0;
     int sq = findLoc(loc);
 
-    mask |= ((U64)0xff << (sq & 56)); // need to shift by rank 0x01-0x0100
-    mask |= ((U64)0x0101010101010101 << (sq & 7)); // need to shift by file, 0x01-0x80
-    // TODO need to cut off the ray
+    U64 hori = ((U64)0xff << (sq & 56));
+    U64 vert = ((U64)0x0101010101010101 << (sq & 7));
+    mask |= getActualRay(loc, hori, color);
+    mask |= getActualRay(loc, vert, color);
+
     return mask;
 }
 U64 Board::getBishopMove(U64 loc, Color color){
@@ -176,35 +178,23 @@ U64 Board::getBishopMove(U64 loc, Color color){
     int diag = 8*(sq & 7) - (sq & 56);
     int nort = -diag & (diag >> 31);
     int sout = diag & (-diag >> 31);
-    mask |= (a1h8Diag >> sout) << nort;
+    U64 posDiag = (a1h8Diag >> sout) << nort;
 
     diag = 56 - 8*(sq & 7) - (sq & 56);
     nort = -diag & (diag >> 31);
     sout = diag & (-diag >> 31);
-    mask |= (h1a8AntiDiag >> sout) << nort;
+    U64 antiDiag = (h1a8AntiDiag >> sout) << nort;
     
-    // TODO cut off rays
+    mask |= getActualRay(loc, posDiag, color);
+    mask |= getActualRay(loc, antiDiag, color);
 
     return mask;
 }
 U64 Board::getQueenMove(U64 loc, Color color){
     U64 mask = 0;
-    int sq = findLoc(loc);
 
-    mask |= ((U64)0xff << (sq & 56)); // need to shift by rank 0x01-0x0100
-    mask |= ((U64)0x0101010101010101 << (sq & 7)); // need to shift by file, 0x01-0x80
-
-    int diag = 8*(sq & 7) - (sq & 56);
-    int nort = -diag & (diag >> 31);
-    int sout = diag & (-diag >> 31);
-    mask |= (a1h8Diag >> sout) << nort;
-
-    diag = 56 - 8*(sq & 7) - (sq & 56);
-    nort = -diag & (diag >> 31);
-    sout = diag & (-diag >> 31);
-    mask |= (h1a8AntiDiag >> sout) << nort;
-
-    // TODO cut off ray
+    mask |= getRookMove(loc, color);
+    mask |= getBishopMove(loc, color);
 
     return mask;
 }
@@ -262,4 +252,42 @@ U64 Board::getKnightMove(U64 loc, Color color){
         mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
     }
     return mask;
+}
+U64 Board::getActualRay(U64 loc, U64 ray, Color color){
+    // get the most significant 1 that is intersecting the ray while being less significant than loc
+    // get the least significant 1 that is intersecting the ray while being more significant than loc
+
+    int locMin = -1;
+    int locMax = -1;
+    U64 pieces = 0; // holds all pieces
+    U64 colPieces = 0;
+    for(int i = 0; i < 12; i++){
+        pieces |= *boards[i].i;
+        if(color == boards[i].col) colPieces |= *boards[i].i;
+    }
+    pieces ^= loc; // holds all pieces except loc
+    pieces &= ray; // holds all pieces intersecting the ray
+    int sq = findLoc(loc);
+    for(int i = 0; i < 64; i++){
+        if(pieces >> i & 1){
+            // has a 1 here
+            if(i < sq) locMin = i;
+            else if(locMax == -1) locMax = i;
+        }
+    }
+    // locMin is most significant less than sq
+    // locMax is least significant greater than sq
+    cout << locMin << " : " << sq << " : " << locMax << endl; 
+    U64 mask = 0xFFFFFFFFFFFFFFFF;
+    cout << ray << endl;
+    if(locMax != -1) ray = ray & (mask >> (63 - locMax));
+    cout << ray << endl;
+    // shifts to the right so everything more significant than locMax is a 0
+    if(locMin != -1) ray = ray & (mask << locMin); // same deal
+    cout << ray << endl;
+
+    ray = ray & ~(ray & colPieces);
+
+
+    return ray;
 }
