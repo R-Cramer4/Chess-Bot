@@ -37,8 +37,6 @@ void Game::Init(){
         cout << endl;
     } // print boards
     */
-    
-
 }
 void Game::Render(){
     renderer->DrawSprite(Resources::GetTexture("board"), glm::vec2(100.0f, 100.0f), glm::vec2(600.0f, 600.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));

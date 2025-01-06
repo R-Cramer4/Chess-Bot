@@ -2,6 +2,7 @@
 #define BOARD_H
 
 #include <cstdint>
+#include <stack>
 #include <string>
 
 typedef uint64_t U64;
@@ -19,6 +20,23 @@ class quad{
         Color col;
         std::string texture;
         char piece;
+};
+struct Move{
+    U64 from;
+    U64 to;
+    char special; // 0 - 15
+    char piece;
+    Color color;
+    // 0 = normal moves
+    // 1 = double pawn psuh
+    // 2 = king castle
+    // 3 = queen castle
+    // 4 = captures
+    // 8 = knight promo
+    // 9 = bishop promo
+    // 10 = rook promo
+    // 11 = queen promo
+    // 12 - 15 = promo with capture
 };
 
 const U64 aFile =         0x0101010101010101;
@@ -66,6 +84,9 @@ class Board{
         bool whiteInCheck = 0;
         bool blackInCheck = 0;
 
+        std::stack<Move> moves;
+        std::stack<std::pair<char, Color>> captures;
+
         quad boards[12] = {
             {&whitePawns, WHITE, "pawn", 'p'},
             {&whiteKnights, WHITE, "knight", 'n'},
@@ -88,6 +109,7 @@ class Board{
 
         U64 generateMoves(U64 loc, char type, Color color, bool top);
         void movePiece(U64 newSpot);
+        void unMovePiece();
         Board(){}
         Board(Board &ref);
     private:
@@ -100,6 +122,7 @@ class Board{
 
         U64 getActualRay(U64 loc, U64 ray, Color color);
         Color isKingInCheck();
+        int getBoard(char piece, Color color);
 };
 
 #endif

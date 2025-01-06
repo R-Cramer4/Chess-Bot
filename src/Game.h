@@ -17,7 +17,7 @@ class Game{
         float boardW = 600.0;
         float boardH = 600.0;
 
-        Board bitboard;
+        Board bitboard = Board();
         void drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r);
 
         Color turn;
