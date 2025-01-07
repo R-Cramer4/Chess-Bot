@@ -158,7 +158,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
             mask = getKnightMove(loc, color);
             break;
         case 'p':
-            // TODO promotions
+            // done no testing
             mask = getPawnMove(loc, color);
             break;
         case 'b':
@@ -329,7 +329,6 @@ void Board::movePiece(U64 newSpot){
     }
 }
 void Board::unMovePiece(){
-    // TODO handle promotions
     // TODO add for pawn pushing (idk if it actually needs this)
     Move move = moves.top();
     moves.pop();
@@ -357,7 +356,7 @@ void Board::unMovePiece(){
         }
     }else if(move.special == 2){
         // kingside castle
-        if(selectedPiece.col == WHITE){
+        if(move.color == WHITE){
             *boards[3].i ^= (U64)0x20;
             *boards[3].i |= (U64)0x80;
         }else{
@@ -372,6 +371,44 @@ void Board::unMovePiece(){
         }else{
             *boards[9].i ^= 0x0800000000000000;
             *boards[9].i |= 0x0100000000000000;
+        }
+    }else if(move.special >= 8){
+        // promo
+        // is some sort of capture
+        if(move.special >= 12){
+            auto piece = captures.top();
+            captures.pop();
+            // get last captured piece
+            board = getBoard(piece.first, piece.second);
+            // for normal captures
+            *boards[board].i |= move.to; // change captured piece
+        }
+
+        *boards[board].i ^= move.to; // un delete old piece(wasnt there)
+        int col = 0;
+        if(move.color == BLACK) col = 6;
+        // delete the actual old piece
+        switch(move.special){
+            case 8:
+            case 12:
+                // knight
+                *boards[1 + col].i ^= move.to;
+                break;
+            case 9:
+            case 13:
+                // bishop
+                *boards[2 + col].i ^= move.to;
+                break;
+            case 10:
+            case 14:
+                // rook
+                *boards[3 + col].i ^= move.to;
+                break;
+            case 11:
+            case 15:
+                // queen
+                *boards[4 + col].i ^= move.to;
+                break;
         }
     }
 }

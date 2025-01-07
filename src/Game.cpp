@@ -169,6 +169,15 @@ void Game::pawnPromo(double x, double y){
 
     *bitboard.boards[board].i ^= isPawnPromo; // get rid of the pawn
     *bitboard.boards[board + add].i |= isPawnPromo; // add piece
+
+    // add to last move
+    auto move = bitboard.moves.top();
+    bitboard.moves.pop();
+
+    // if captured a piece, ranges from 12 - 15
+    // otherwise ranges from 8-11
+    move.special += 7 + add;
+    bitboard.moves.push(move);
     
     isPawnPromo = 0;
 }
