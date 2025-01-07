@@ -100,7 +100,7 @@ case 'b':
                 break;
             case 'k':
                 blackCastleKingside = true;
-                break;
+         break;
             case 'q':
                 blackCastleQueenside = true;
         }
@@ -158,7 +158,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
             mask = getKnightMove(loc, color);
             break;
         case 'p':
-            // done, no testing
+            // TODO promotions
             mask = getPawnMove(loc, color);
             break;
         case 'b':
@@ -174,8 +174,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
             mask = getQueenMove(loc, color);
             break;
         case 'k':
-            // TODO need to check for if that would be in check
-            // TODO castling
+            // done no testing
             mask = getKingMove(loc, color);
             break;
     }
@@ -198,10 +197,26 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
             }
         }
     }
+    if(piece == 'k'){
+        if(mask & (loc << 2)){
+            // can castle kinside
+            if(!(mask & (loc << 1))){
+                // cant move one left
+                mask ^= (loc << 2);
+            }
+        }else if(mask & (loc >> 2)){
+            // castle queenside
+            if(!(mask & (loc >> 1))){
+                // cant move one to the side
+                mask ^= (loc >> 2);
+            }
+        }
+    }
     return mask;
 }
 void Board::movePiece(U64 newSpot){
     if(newSpot & *selectedPiece.i) return;
+    if(selectedPiece.col == NONE) return;
     char special = 0;
     // selected piece has the old piece
     // and we have the spot we are moving to
@@ -251,6 +266,57 @@ void Board::movePiece(U64 newSpot){
         enpassantWhite = 0;
     }
 
+
+    // handle castling rights
+
+    // king
+    if(selectedPiece.piece == 'k'){
+        if(selectedPiece.col == WHITE){
+            this->whiteCastleQueen = 0;
+            this->whiteCastleKing = 0;
+        }else{
+            this->blackCastleQueen = 0;
+            this->blackCastleKing = 0;
+        }
+        if(newSpot == *selectedPiece.i << 2){
+            // kingside
+            special += 2;
+
+            // just need to move rook, will move king later
+            if(selectedPiece.col == WHITE){
+                *boards[3].i ^= (U64)0x80;
+                *boards[3].i |= (U64)0x20;
+            }else{
+                *boards[9].i ^= 0x8000000000000000;
+                *boards[9].i |= 0x2000000000000000;
+            }
+        }else if(newSpot == *selectedPiece.i >> 2){
+            special += 3;
+            // castling queenside 
+            if(selectedPiece.col == WHITE){
+                *boards[3].i ^= (U64)0x1;
+                *boards[3].i |= (U64)0x8;
+            }else{
+                *boards[9].i ^= 0x0100000000000000;
+                *boards[9].i |= 0x0800000000000000;
+            }
+        }
+    }
+    // rook
+    else if(selectedPiece.piece == 'r'){
+        if(selectedPiece.col == WHITE){
+            if(*selectedPiece.i == 0x0000000000000001 && whiteCastleQueen) 
+                this->whiteCastleQueen = 0;
+            if(*selectedPiece.i == 0x0000000000000080 && whiteCastleKing)
+                this->whiteCastleKing = 0;
+        }else{
+            if(*selectedPiece.i == 0x0100000000000000 && blackCastleQueen) 
+                this->blackCastleQueen = 0;
+            if(*selectedPiece.i == 0x8000000000000000 && blackCastleKing)
+                this->blackCastleKing = 0;
+        }
+    }
+
     *boards[board].i ^= *selectedPiece.i;
     *boards[board].i |= newSpot;
     moves.push({*selectedPiece.i, newSpot, special, selectedPiece.piece, selectedPiece.col});
@@ -264,7 +330,6 @@ void Board::movePiece(U64 newSpot){
 }
 void Board::unMovePiece(){
     // TODO handle promotions
-    // TODO handle castles
     // TODO add for pawn pushing (idk if it actually needs this)
     Move move = moves.top();
     moves.pop();
@@ -289,6 +354,24 @@ void Board::unMovePiece(){
             // enpassant capture
             if(piece.second == BLACK) *boards[board].i |= (move.to << 8);
             else *boards[board].i |= move.to >> 8;
+        }
+    }else if(move.special == 2){
+        // kingside castle
+        if(selectedPiece.col == WHITE){
+            *boards[3].i ^= (U64)0x20;
+            *boards[3].i |= (U64)0x80;
+        }else{
+            *boards[9].i ^= 0x2000000000000000;
+            *boards[9].i |= 0x8000000000000000;
+        }
+    }else if(move.special == 3){
+        // queenside castle
+        if(move.color == WHITE){
+            *boards[3].i ^= (U64)0x8;
+            *boards[3].i |= (U64)0x1;
+        }else{
+            *boards[9].i ^= 0x0800000000000000;
+            *boards[9].i |= 0x0100000000000000;
         }
     }
 }
@@ -331,16 +414,38 @@ U64 Board::getQueenMove(U64 loc, Color color){
     return mask;
 }
 U64 Board::getKingMove(U64 loc, Color color){
-    // TODO check for if will be in check
-    // TODO castling
     U64 mask = 0;
     mask |= ((loc << 1) & ~aFile) | ((loc >> 1) & ~hFile); // side to side
     mask |= (loc << 8) | (loc >> 8); // up and down
     mask |= ((loc << 7) & ~hFile) | ((loc << 9) & ~aFile); // diags
     mask |= ((loc >> 7) & ~aFile) | ((loc >> 9) & ~hFile); // lower diags
 
-    for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
-        mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
+    U64 pieces = 0;
+    for(int i = 0 ; i < 12; i++){
+        if(color == boards[i].col) 
+            mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
+        pieces |= *boards[i].i;
+    }
+    // pieces has what we want for castling
+    if(color == WHITE){
+        if(whiteInCheck) return mask;
+        // cant be in check or castle through/into check
+        // no other pieces can be there
+        // king moves 2 spaces, and rook jumps to other side
+        if(whiteCastleKing && !(pieces & 0x0000000000000060)){
+            // can castle
+            mask |= loc << 2;
+        }else if(whiteCastleQueen && !(pieces & 0x000000000000000e)){
+            mask |= loc >> 2;
+        }
+    }else if(color == BLACK){
+        if(blackInCheck) return mask;
+
+        if(blackCastleKing && !(pieces & 0x6000000000000000)){
+            mask |= loc << 2;
+        }else if(blackCastleQueen && !(pieces & 0x0e00000000000000)){
+            mask |= loc >> 2;
+        }
     }
     return mask;
 }
@@ -348,11 +453,12 @@ U64 Board::getPawnMove(U64 loc, Color color){
     U64 mask = 0;
 
     if(color == WHITE){
-        mask = mask | (loc << 8); // not handling overflow
-        if(loc & 0x000000000000ff00) mask |= (loc << 16);
+        mask |= (loc << 8); // normal moves
+        mask |= ((loc & 0x000000000000ff00) << 16);
+        // branchless, if a pawn isnt in in the mask it results in a 0 being shifted
     }else{
-        mask = mask | (loc >> 8);
-        if(loc & 0x00ff000000000000) mask |= (loc >> 16);
+        mask |= (loc >> 8);
+        mask |= ((loc & 0x00ff000000000000) >> 16);
     }
     U64 attack = 0;
     if(color == WHITE) attack = (loc << 7) | (loc << 9);
@@ -435,6 +541,11 @@ Color Board::isKingInCheck(){
     // generate moves for every piece on the board
     // if one of those moves intersects with the king of the color
     // return that color
+    // 
+    // inefficient, could just look at last move and also search for pins
+    // case : last piece moved is now attacking king
+    // case : last piece moved reveals a piece that is attacking the king
+    // TODO make efficient
 
     for(int i = 0; i < 12; i++){
         // loop through each bitboard
