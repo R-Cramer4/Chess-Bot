@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <stack>
 #include <string>
+#include <vector>
 
 typedef uint64_t U64;
 enum Color {BLACK, WHITE, NONE};
@@ -75,6 +76,7 @@ class Board{
 
         U64 enpassantBlack = 0;
         U64 enpassantWhite = 0;
+        U64 enpassantLoc = 0;
 
         bool whiteCastleKing = 1;
         bool whiteCastleQueen = 1;
@@ -84,8 +86,12 @@ class Board{
         bool whiteInCheck = 0;
         bool blackInCheck = 0;
 
+        int halfMoves = 0;
+        int fullMoves = 0;
         std::stack<Move> moves;
         std::stack<std::pair<char, Color>> captures;
+
+        Color turn = WHITE;
 
         quad boards[12] = {
             {&whitePawns, WHITE, "pawn", 'p'},
@@ -103,11 +109,12 @@ class Board{
         };
         
 
-        void generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
+        Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
         int findLoc(U64 x);
         void printLoc(U64 x);
 
         U64 generateMoves(U64 loc, char type, Color color, bool top);
+        std::vector<Move> getAllMoves();
         void movePiece(U64 newSpot);
         void unMovePiece();
         Board(){}

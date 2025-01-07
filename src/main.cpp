@@ -14,7 +14,7 @@ const unsigned int SCR_HEIGHT = 800;
 
 Game *game = new Game();
 
-int main(){
+int main(int argc, const char *argv[]){
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -45,7 +45,8 @@ int main(){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // game
-    game->Init();
+    if(argc > 1) game->Init(argv[1]);
+    else game->Init();
 
 
     // window loop

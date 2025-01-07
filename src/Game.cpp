@@ -8,7 +8,7 @@
 
 SpriteRenderer *renderer; 
 
-void Game::Init(){
+void Game::Init(string fen){
     // load shaders
     Resources::LoadShader("src/vertex.vert", "src/fragment.frag", nullptr, "sprite");
     // shader config
@@ -28,9 +28,8 @@ void Game::Init(){
     Resources::LoadTexture("textures/pawn_promo.png", true, "pawnPromo");
 
 
-    turn = WHITE;
 
-    bitboard.generateBitBoards("");
+    turn = bitboard.generateBitBoards(fen);
     /*for(int i = 0; i < 2; i++){
         for(int j = 0; j < 6; j++){
             cout << std::bitset<64>(*actBoard.boards[i][j]) << endl;
