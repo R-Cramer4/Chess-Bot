@@ -461,8 +461,8 @@ U64 Board::getPawnMove(U64 loc, Color color){
         mask |= ((loc & 0x00ff000000000000) >> 16);
     }
     U64 attack = 0;
-    if(color == WHITE) attack = (loc << 7) | (loc << 9);
-    else attack = (loc >> 7) | (loc >> 9);
+    if(color == WHITE) attack = ((loc << 7) & ~hFile) | ((loc << 9) & ~aFile);
+    else attack = ((loc >> 7) & ~hFile) | ((loc >> 9) & ~aFile);
 
     U64 opponentPieces = 0;
     for(int i = 0 ; i < 12; i++){

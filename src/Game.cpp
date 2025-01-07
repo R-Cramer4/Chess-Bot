@@ -25,6 +25,7 @@ void Game::Init(){
     Resources::LoadTexture("textures/bishop.png", true, "bishop");
     Resources::LoadTexture("textures/pawn.png", true, "pawn");
     Resources::LoadTexture("textures/mask.png", true, "mask");
+    Resources::LoadTexture("textures/pawn_promo.png", true, "pawnPromo");
 
 
     turn = WHITE;
@@ -63,8 +64,18 @@ void Game::Render(){
             temp = temp - ((U64)1 << (U64)loc);
         }
     }
+
+    if(isPawnPromo){
+        renderer->DrawSprite(Resources::GetTexture("pawnPromo"), 
+                            glm::vec2(boardW / 2, boardH / 2), glm::vec2(200.0f, 200.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+
+    }
 }
 void Game::Update(double x, double y){
+    if(isPawnPromo){
+        pawnPromo(x, y);
+        return;
+    }
     // handle mouse clicks
     int locx, locy;
     locx = x - ((Width - boardW) / 2); // goes to edge of board
@@ -81,10 +92,23 @@ void Game::Update(double x, double y){
 
     // generate potential moves if we click on a piece
     if((bitboard.colorMask & loc) != 0){
-        if(*bitboard.selectedPiece.i != loc){
+        if(*bitboard.selectedPiece.i != loc && *bitboard.selectedPiece.i != 0){
             // we didnt click on the same piece twice
             
             bitboard.movePiece(loc); // move piece
+            if(bitboard.selectedPiece.piece == 'p'){
+                if(bitboard.selectedPiece.col == WHITE){
+                    if(loc & 0xff00000000000000){
+                        // was a promotion
+                        isPawnPromo = loc;
+                    }
+                }else if(bitboard.selectedPiece.col == BLACK){
+                    if(loc & (U64)0xff){
+                        isPawnPromo = loc;
+                    }
+                }
+            }
+
             turn = (turn == WHITE ? BLACK : WHITE);
             *bitboard.selectedPiece.i = 0;
         }
@@ -107,6 +131,7 @@ void Game::Update(double x, double y){
                 bitboard.colorMask |= loc;
             }
         }
+        if(*bitboard.selectedPiece.i == 0) bitboard.colorMask = loc;
     }
 }
 
@@ -116,4 +141,34 @@ void Game::drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r){
     // invert y so it draws properly
 
     r->DrawSprite(Resources::GetTexture(texture), glm::vec2(locx, locy), glm::vec2(boardW / 8, boardH / 8), 0.0f, glm::vec3((float)c));
+}
+void Game::pawnPromo(double x, double y){
+    // create pawn promo screen and handle clicks
+    int locx, locy;
+    locx = x - ((Width - boardW) / 2); // goes to edge of board
+    locx = locx / (boardW / 2); // now goes to pos
+    locy = y - ((Height - boardH) / 2); // goes to edge of board
+    locy = locy / (boardH / 2); // now goes to pos
+    
+    // not clamped to exactly on the img, so if you click off it it still gives you a pos in the quadrant you want
+
+    // the piece we want is in isPawnPromo, the color is ~Turn
+
+    int board = 0;
+    if(turn == WHITE) board = 6;
+
+    // knight += 1
+    // bishop += 2
+    // rook += 3
+    // queen += 4
+    int add = 0;
+    if(locx == 0 && locy == 0) add = 2;
+    else if(locx == 0 && locy == 1) add = 4;
+    else if(locy == 0) add = 1;
+    else add = 3;
+
+    *bitboard.boards[board].i ^= isPawnPromo; // get rid of the pawn
+    *bitboard.boards[board + add].i |= isPawnPromo; // add piece
+    
+    isPawnPromo = 0;
 }

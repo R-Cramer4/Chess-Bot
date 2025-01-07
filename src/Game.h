@@ -11,6 +11,9 @@ class Game{
         void Init();
         void Render();
         void Update(double x, double y); // mouse has clicked this pos
+    
+        U64 isPawnPromo = 0;
+        void pawnPromo(double x, double y);
         
         unsigned int Width = 800;
         unsigned int Height = 800;
