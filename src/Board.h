@@ -71,6 +71,7 @@ class Board{
         U64 blackKing = 0;
 
         U64 colorMask = 0;
+        U64 debugMask = 0;
         U64 selecPieceLoc = 0;
         quad selectedPiece = {&selecPieceLoc, WHITE, "", 'p'};
 

@@ -152,6 +152,8 @@ Board::Board(Board &ref){
     this->selectedPiece.piece = ref.selectedPiece.piece;
     this->selectedPiece.col = ref.selectedPiece.col;
     this->selecPieceLoc = ref.selecPieceLoc;
+
+    this->moves = ref.moves;
 }
 int Board::findLoc(U64 x){
     int loc = 0;
@@ -586,6 +588,7 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     return ray;
 }
 bool Board::isKingInCheck(Color c){
+    if(this->moves.size() < 2) return false;
     // checks for the color that we pass it
     // returns the color of one of the kings if it is in check
 
@@ -595,9 +598,10 @@ bool Board::isKingInCheck(Color c){
     // first check last piece moved
     Move top = moves.top(); // last piece
     moves.pop();
-    Move last = top; // piece before
-    if(moves.size() != 0) last = moves.top();
+    Move last = moves.top(); // piece before
     moves.push(top); // fix moves
+
+
     if(c != top.color){
         last = top; // check opponents king
     }
@@ -605,8 +609,22 @@ bool Board::isKingInCheck(Color c){
 
     // we are searching for check of c's king
     // and need to return if it is in check
+    // if c == black we are checking to see if black is in check
+    // so we look at whites move
     
 
+    // moves:
+    // black <- top
+    // white <- last
+    // black
+    // white
+    // etc
+    // if c == black
+    //  look at whites move so last = last
+    // if c == white
+    //  look at blacks move so last = top
+    // if c != top
+    //  last = top
 
 
 
@@ -614,8 +632,11 @@ bool Board::isKingInCheck(Color c){
 
     
 
-    if(last.color == WHITE && (*boards[11].i & nextMoves)) return BLACK;
-    else if(last.color == BLACK && (*boards[5].i & nextMoves)) return WHITE;
+    int loc = 0;
+    if(c == boards[11].col) loc = 11;
+    else loc = 5;
+    if(*boards[loc].i & nextMoves) return true;
+    // checks if there is an intersection between the king we are checking and the moves we generated
 
     // what about revealed pins
     // only need to worry about rooks, bishops, and queens
@@ -634,11 +655,10 @@ bool Board::isKingInCheck(Color c){
     if((*boards[2 + col].i & bishopRays) ||
         (*boards[3 + col].i & rookRays) ||
         (*boards[4 + col].i & (rookRays | bishopRays))){
-        cout << "Intersection" << endl;
         // bishop, rook, king
-        return col == 6 ? BLACK : WHITE; 
+        return true; 
     } 
-    return NONE;
+    return false;
 }
 int Board::getBoard(char piece, Color color){
     int board = 0;

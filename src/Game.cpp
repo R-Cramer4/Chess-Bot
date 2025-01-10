@@ -50,6 +50,14 @@ void Game::Render(){
         // temp - 1 << loc
         temp = temp - ((U64)1 << (U64)loc);
     }
+    temp = bitboard.debugMask;
+    while(temp != 0){
+        int loc = bitboard.findLoc(temp);
+        drawPiece(loc % 8, loc / 8, WHITE, "mask", renderer);
+
+        // temp - 1 << loc
+        temp = temp - ((U64)1 << (U64)loc);
+    }
     
     for(int i = 0; i < 12; i++){ // go through all bitboards
         temp = *bitboard.boards[i].i;
@@ -75,6 +83,7 @@ void Game::Update(double x, double y){
         pawnPromo(x, y);
         return;
     }
+    if(bitboard.debugMask != 0) bitboard.debugMask = 0;
     // handle mouse clicks
     int locx, locy;
     locx = x - ((Width - boardW) / 2); // goes to edge of board
