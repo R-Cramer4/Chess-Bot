@@ -207,13 +207,11 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
         if(mask & move){
             // this is a valid move
             next.movePiece(move); 
-            Color isCheck = next.isKingInCheck();
-            cout << isCheck << endl;
-            next.unMovePiece();
-            if(color == isCheck){
-                // left our own king in check
-                mask ^= move; 
+            if(next.isKingInCheck(color)){
+                // our king is in check
+                mask ^= move;
             }
+            next.unMovePiece();
         }
     }
     if(piece == 'k'){
@@ -340,12 +338,9 @@ void Board::movePiece(U64 newSpot){
     *boards[board].i |= newSpot;
     moves.push({*selectedPiece.i, newSpot, special, selectedPiece.piece, selectedPiece.col});
     // check if other king is in check
-    Color col = isKingInCheck();
-    if(col == NONE) return;
-    if(selectedPiece.col != col){
-        if(col == WHITE) whiteInCheck = true;
-        else blackInCheck = true;
-    }
+    bool col = isKingInCheck(selectedPiece.col == WHITE ? BLACK : WHITE);
+    if(col && selectedPiece.col == WHITE) whiteInCheck = true;
+    else if(col && selectedPiece.col == BLACK) blackInCheck = true;
 }
 void Board::unMovePiece(){
     Move move = moves.top();
@@ -590,15 +585,35 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
 
     return ray;
 }
-Color Board::isKingInCheck(){
+bool Board::isKingInCheck(Color c){
+    // checks for the color that we pass it
     // returns the color of one of the kings if it is in check
 
     // both kings can never be in check at same time
     // so the only way a king would be in chekc is if the last move put it in check
 
     // first check last piece moved
-    Move last = moves.top();
+    Move top = moves.top(); // last piece
+    moves.pop();
+    Move last = top; // piece before
+    if(moves.size() != 0) last = moves.top();
+    moves.push(top); // fix moves
+    if(c != top.color){
+        last = top; // check opponents king
+    }
     U64 nextMoves = generateMoves(last.to, last.piece, last.color, false);
+
+    // we are searching for check of c's king
+    // and need to return if it is in check
+    
+
+
+
+
+
+
+    
+
     if(last.color == WHITE && (*boards[11].i & nextMoves)) return BLACK;
     else if(last.color == BLACK && (*boards[5].i & nextMoves)) return WHITE;
 
@@ -619,8 +634,9 @@ Color Board::isKingInCheck(){
     if((*boards[2 + col].i & bishopRays) ||
         (*boards[3 + col].i & rookRays) ||
         (*boards[4 + col].i & (rookRays | bishopRays))){
+        cout << "Intersection" << endl;
         // bishop, rook, king
-        return col == 6 ? WHITE : BLACK; 
+        return col == 6 ? BLACK : WHITE; 
     } 
     return NONE;
 }
