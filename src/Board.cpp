@@ -606,51 +606,26 @@ bool Board::isKingInCheck(Color c){
         last = top; // check opponents king
     }
     U64 nextMoves = generateMoves(last.to, last.piece, last.color, false);
-
-    // we are searching for check of c's king
-    // and need to return if it is in check
-    // if c == black we are checking to see if black is in check
-    // so we look at whites move
-    
-
-    // moves:
-    // black <- top
-    // white <- last
-    // black
-    // white
-    // etc
-    // if c == black
-    //  look at whites move so last = last
-    // if c == white
-    //  look at blacks move so last = top
-    // if c != top
-    //  last = top
-
-
-
-
-
-    
-
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
     if(*boards[loc].i & nextMoves) return true;
     // checks if there is an intersection between the king we are checking and the moves we generated
+    // this works
 
     // what about revealed pins
     // only need to worry about rooks, bishops, and queens
     // can generate all sliding moves from my king
     // if i mask my own pieces and then if it intersects with sliding pieces who can make that move, the king is in check
-    int king = 5;
-    if(last.color == WHITE) king = 11;
+    // TODO make work
 
-    U64 rookRays = getRookMove(*boards[king].i, boards[king].col);
-    U64 bishopRays = getBishopMove(*boards[king].i, boards[king].col);
+    U64 rookRays = getRookMove(*boards[loc].i, boards[loc].col);
+    U64 bishopRays = getBishopMove(*boards[loc].i, boards[loc].col);
     // have rays, they are intersected with opponent pieces if can reach
     // go through bishop, rook, queen
-    int col = 0;
-    if(king == 11) col = 6;
+    int col = 0; // for c's pieces, need for !c's pieces
+    if(loc == 5) col = 6;
+    debugMask = rookRays | bishopRays;
     
     if((*boards[2 + col].i & bishopRays) ||
         (*boards[3 + col].i & rookRays) ||
