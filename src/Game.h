@@ -10,7 +10,8 @@ class Game{
     public:
         void Init(string fen = "");
         void Render();
-        void Update(double x, double y); // mouse has clicked this pos
+        bool Update(double x, double y); // mouse has clicked this pos
+        void Clear();
         
         unsigned int Width = 800;
         unsigned int Height = 800;

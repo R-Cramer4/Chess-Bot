@@ -38,8 +38,12 @@ void Game::Init(string fen){
     } // print boards
     */
 
-    U64 perft2 = bitboard.Perft(2);
-    cout << "2: " << perft2 << endl;
+    U64 perft = bitboard.Perft(3);
+    cout << "3: " << perft << endl;
+}
+void Game::Clear(){
+    Resources::Clear();
+    delete renderer;
 }
 void Game::Render(){
     renderer->DrawSprite(Resources::GetTexture("board"), glm::vec2(100.0f, 100.0f), glm::vec2(600.0f, 600.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -81,10 +85,10 @@ void Game::Render(){
 
     }
 }
-void Game::Update(double x, double y){
+bool Game::Update(double x, double y){
     if(isPawnPromo){
         pawnPromo(x, y);
-        return;
+        return true;
     }
     if(bitboard.debugMask != 0) bitboard.debugMask = 0;
     // handle mouse clicks
@@ -145,10 +149,12 @@ void Game::Update(double x, double y){
     }
     if(*bitboard.boards[5].i == 0){
         cout << "Black wins" << endl;
-        exit(1);
+        return false;
     }else if(*bitboard.boards[11].i == 0){
         cout << "White wins" << endl;
+        return false;
     }
+    return true;
 }
 
 void Game::drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r){

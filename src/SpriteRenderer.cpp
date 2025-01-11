@@ -8,9 +8,9 @@ SpriteRenderer::SpriteRenderer(const Shader &shader){
 }
 SpriteRenderer::~SpriteRenderer(){
     glDeleteVertexArrays(1, &this->quadVAO);
+    glDeleteBuffers(1, &VBO);
 }
 void SpriteRenderer::initRenderData(){
-    unsigned int VBO;
     float vertices[] = { 
         // pos      // tex
         0.0f, 1.0f, 0.0f, 1.0f,

@@ -140,6 +140,10 @@ Board::Board(Board &ref){
     this->blackRooks = ref.blackRooks;
     this->blackQueens = ref.blackQueens;
     this->blackKing = ref.blackKing;
+
+    this->selectedPiece.piece = ref.selectedPiece.piece;
+    this->selectedPiece.col = ref.selectedPiece.col;
+    this->selecPieceLoc = ref.selecPieceLoc;
     
     this->enpassantLoc = ref.enpassantLoc;
 
@@ -148,11 +152,12 @@ Board::Board(Board &ref){
     this->blackCastleKing = ref.blackCastleKing;
     this->blackCastleQueen = ref.blackCastleQueen;
 
-    this->selectedPiece.piece = ref.selectedPiece.piece;
-    this->selectedPiece.col = ref.selectedPiece.col;
-    this->selecPieceLoc = ref.selecPieceLoc;
-
+    this->halfMoves = ref.halfMoves;
+    this->fullMoves = ref.fullMoves;
     this->moves = ref.moves;
+    this->captures = ref.captures;
+
+    this->turn = ref.turn;
 }
 int Board::findLoc(U64 x){
     int loc = 0;
@@ -203,6 +208,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
 
     Board next(*this);
     // go through each move and check if it would leave the king in check
+    // TODO Pieces cant capture other pieces that are putting the king in check
     for(int i = 0; i < 63; i++){
         U64 move = (U64)1 << i;
         if(mask & move){
@@ -259,13 +265,13 @@ void Board::movePiece(U64 newSpot){
             *boards[board + 6].i ^= (newSpot >> 8);
             captures.push({boards[board + 6].piece, boards[board + 6].col});
             enpassantLoc = 0;
-            special += 5;
+            special = 5;
         }else if(selectedPiece.col == BLACK && enpassantLoc < 0x0000000100000000 &&
             (newSpot & enpassantLoc)){
             *boards[board - 6].i ^= (newSpot << 8);
             captures.push({boards[board - 6].piece, boards[board - 6].col});
             enpassantLoc = 0;
-            special += 5;
+            special = 5;
         }
         // if we can shift 16 and get the new spot we add an enpassant square
         // if we can shift back 8 and theres an enpassant square, remove it
@@ -290,7 +296,7 @@ void Board::movePiece(U64 newSpot){
         }
         if(newSpot == *selectedPiece.i << 2){
             // kingside
-            special += 2;
+            special = 2;
 
             // just need to move rook, will move king later
             if(selectedPiece.col == WHITE){
@@ -301,7 +307,7 @@ void Board::movePiece(U64 newSpot){
                 *boards[9].i |= 0x2000000000000000;
             }
         }else if(newSpot == *selectedPiece.i >> 2){
-            special += 3;
+            special = 3;
             // castling queenside 
             if(selectedPiece.col == WHITE){
                 *boards[3].i ^= (U64)0x1;
@@ -327,15 +333,20 @@ void Board::movePiece(U64 newSpot){
         }
     }
 
+    // move piece
     *boards[board].i ^= *selectedPiece.i;
     *boards[board].i |= newSpot;
     moves.push({*selectedPiece.i, newSpot, special, selectedPiece.piece, selectedPiece.col});
-    // check if other king is in check
 
+    halfMoves++;
     if(turn == WHITE) turn = BLACK;
-    else turn = WHITE;
+    else{
+        turn = WHITE;
+        fullMoves++;
+    } 
 }
 void Board::unMovePiece(){
+    if(moves.size() == 0) return;
     Move move = moves.top();
     moves.pop();
     // gets last move
@@ -667,11 +678,12 @@ std::vector<Move> Board::getAllMoves(){
     std::vector<Move> newMoves;
 
     for(int i = 0; i < 12; i++){
+        if(boards[i].col != turn) continue;
         // loop through each bitboard
         for(int k = 0; k < 63; k++){
             if((*boards[i].i >> k) & 1){
                 // there is a piece here
-                U64 mask = generateMoves((U64)1 << k, boards[i].piece, boards[i].col, false);
+                U64 mask = generateMoves((U64)1 << k, boards[i].piece, boards[i].col, true);
                 // has all moves of this piece
                 if(mask == 0) continue;
                 Move temp;
@@ -691,18 +703,14 @@ std::vector<Move> Board::getAllMoves(){
     return newMoves;
 }
 U64 Board::Perft(int depth){
-    if(depth == 0) return (U64)1;
+    if(depth == 0) return 1;
 
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
-    Board next(*this);
     for(int i = 0; i < possMoves.size(); i++){
-        *next.selectedPiece.i = possMoves[i].from;
-        next.selectedPiece.col = possMoves[i].color;
-        next.selectedPiece.piece = possMoves[i].piece;
-        next.movePiece(possMoves[i].to);
-        moves += next.Perft(depth - 1);
-        next.unMovePiece();
+        movePiece(possMoves[i].to);
+        moves += Perft(depth - 1);
+        unMovePiece();
     }
     
     return moves;

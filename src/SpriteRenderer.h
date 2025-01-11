@@ -21,6 +21,7 @@ class SpriteRenderer{
         Shader shader;
         unsigned int quadVAO;
         void initRenderData();
+        unsigned int VBO;
 
 };
 

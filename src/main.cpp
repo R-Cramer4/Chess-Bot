@@ -39,6 +39,7 @@ int main(int argc, const char *argv[]){
 
     if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
         cout << "Failed to initialize glad" << endl;
+        glfwTerminate();
         return -1;
     }
 
@@ -65,6 +66,7 @@ int main(int argc, const char *argv[]){
         glfwPollEvents();
     }
 
+    game->Clear();
     glfwTerminate();
     return 0;
 }
@@ -81,7 +83,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
         double x, y;
         glfwGetCursorPos(window, &x, &y);
-        game->Update(x, y);
+        if(!game->Update(x, y)) glfwSetWindowShouldClose(window, true);
     }
 }
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
