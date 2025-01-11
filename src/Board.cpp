@@ -141,8 +141,7 @@ Board::Board(Board &ref){
     this->blackQueens = ref.blackQueens;
     this->blackKing = ref.blackKing;
     
-    this->enpassantBlack = ref.enpassantBlack;
-    this->enpassantWhite = ref.enpassantWhite;
+    this->enpassantLoc = ref.enpassantLoc;
 
     this->whiteCastleKing = ref.whiteCastleKing;
     this->whiteCastleQueen = ref.whiteCastleQueen;
@@ -255,34 +254,23 @@ void Board::movePiece(U64 newSpot){
     // deal with enpassant here, adding and removing squares
     if(selectedPiece.piece == 'p'){
         // need to check for capture by enpassant first
-        if(*selectedPiece.i & enpassantWhite){
-            // a white pawn just got captured by a black pawn
-            *boards[board - 6].i ^= (newSpot << 8);
-            enpassantWhite ^= newSpot;
-            special += 1;
-        }else if(*selectedPiece.i & enpassantBlack){
-            // a black pawn just got captured
-            *boards[board + 6].i ^= (newSpot >> 8);
-            enpassantBlack ^= newSpot;
+        if(newSpot & enpassantLoc){
+            // get rid of old pawn
+            if(selectedPiece.col == WHITE) *boards[board + 6].i ^= (newSpot >> 8);
+            else *boards[board - 6].i ^= (newSpot << 8);
+            enpassantLoc = 0;
             special += 1;
         }
         // if we can shift 16 and get the new spot we add an enpassant square
         // if we can shift back 8 and theres an enpassant square, remove it
         if(selectedPiece.col == WHITE){
             // check to create new squares
-            if(*selectedPiece.i << 16 == newSpot) enpassantWhite = *selectedPiece.i << 8;
-            // check for old squares
-            if(((*selectedPiece.i >> 8) & enpassantWhite) != 0) 
-                enpassantWhite ^= (*selectedPiece.i >> 8);
+            if(*selectedPiece.i << 16 == newSpot) enpassantLoc = *selectedPiece.i << 8;
         }else{
-            if(*selectedPiece.i >> 16 == newSpot) enpassantBlack = *selectedPiece.i >> 8;
-            // check for old squares
-            if(((*selectedPiece.i << 8) & enpassantBlack) != 0) 
-                enpassantBlack ^= (*selectedPiece.i << 8);
+            if(*selectedPiece.i >> 16 == newSpot) enpassantLoc = *selectedPiece.i >> 8;
         }
     }else{
-        enpassantBlack = 0;
-        enpassantWhite = 0;
+        enpassantLoc = 0;
     }
 
 
@@ -366,6 +354,7 @@ void Board::unMovePiece(){
         if(move.special != 5) *boards[board].i |= move.to;
         else{
             // enpassant capture
+            enpassantLoc = move.to; // this is where the pawn went
             if(piece.second == BLACK) *boards[board].i |= (move.to << 8);
             else *boards[board].i |= move.to >> 8;
         }
@@ -521,8 +510,10 @@ U64 Board::getPawnMove(U64 loc, Color color){
         mask ^= (mask & *boards[i].i); // cant capture forwards
         if(boards[i].col != color) opponentPieces |= *boards[i].i;
     }
-    if(color == WHITE) opponentPieces |= enpassantBlack;
-    else opponentPieces |= enpassantWhite;
+    // check empassantLoc
+    if(color == WHITE && enpassantLoc >= 0x0000000100000000) opponentPieces |= enpassantLoc;
+    else if(color == BLACK && enpassantLoc < 0x0000000100000000) opponentPieces |= enpassantLoc;
+    // the enpassant loc is on the correct side of the board
 
     attack = attack & opponentPieces;
     mask |= attack;
@@ -617,7 +608,6 @@ bool Board::isKingInCheck(Color c){
     // only need to worry about rooks, bishops, and queens
     // can generate all sliding moves from my king
     // if i mask my own pieces and then if it intersects with sliding pieces who can make that move, the king is in check
-    // TODO make work
 
     U64 rookRays = getRookMove(*boards[loc].i, boards[loc].col);
     U64 bishopRays = getBishopMove(*boards[loc].i, boards[loc].col);
@@ -625,7 +615,6 @@ bool Board::isKingInCheck(Color c){
     // go through bishop, rook, queen
     int col = 0; // for c's pieces, need for !c's pieces
     if(loc == 5) col = 6;
-    debugMask = rookRays | bishopRays;
     
     if((*boards[2 + col].i & bishopRays) ||
         (*boards[3 + col].i & rookRays) ||

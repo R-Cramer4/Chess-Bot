@@ -75,8 +75,6 @@ class Board{
         U64 selecPieceLoc = 0;
         quad selectedPiece = {&selecPieceLoc, WHITE, "", 'p'};
 
-        U64 enpassantBlack = 0;
-        U64 enpassantWhite = 0;
         U64 enpassantLoc = 0;
 
         bool whiteCastleKing = 1;

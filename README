@@ -1,8 +1,7 @@
 Chess Game written with OpenGL and C++
 
-Playble game, most valid moves are implemented
+Playble game, all valid moves implemented, but there still might be bugs
 
 Not implemented:
-- enpassant with the black pieces
 - Draw by repititon
 - the end of the game (right now nothing happens upon king capture)
