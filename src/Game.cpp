@@ -37,6 +37,9 @@ void Game::Init(string fen){
         cout << endl;
     } // print boards
     */
+
+    U64 perft2 = bitboard.Perft(2);
+    cout << "2: " << perft2 << endl;
 }
 void Game::Render(){
     renderer->DrawSprite(Resources::GetTexture("board"), glm::vec2(100.0f, 100.0f), glm::vec2(600.0f, 600.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -117,7 +120,6 @@ void Game::Update(double x, double y){
                 }
             }
 
-            turn = (turn == WHITE ? BLACK : WHITE);
             *bitboard.selectedPiece.i = 0;
         }
         bitboard.colorMask = 0;
@@ -126,7 +128,7 @@ void Game::Update(double x, double y){
 
         *bitboard.selectedPiece.i = 0; // sets to be 0 if not already
         for(int i = 0; i < 12; i++){
-            if(bitboard.boards[i].col == turn && 
+            if(bitboard.boards[i].col == bitboard.turn && 
                 *bitboard.boards[i].i == (*bitboard.boards[i].i | loc)){
 
                 // update the selected piece
@@ -140,6 +142,12 @@ void Game::Update(double x, double y){
             }
         }
         if(*bitboard.selectedPiece.i == 0) bitboard.colorMask = loc;
+    }
+    if(*bitboard.boards[5].i == 0){
+        cout << "Black wins" << endl;
+        exit(1);
+    }else if(*bitboard.boards[11].i == 0){
+        cout << "White wins" << endl;
     }
 }
 
@@ -163,7 +171,7 @@ void Game::pawnPromo(double x, double y){
     // the piece we want is in isPawnPromo, the color is ~Turn
 
     int board = 0;
-    if(turn == WHITE) board = 6;
+    if(bitboard.turn == WHITE) board = 6;
 
     // knight += 1
     // bishop += 2

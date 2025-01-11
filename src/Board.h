@@ -82,9 +82,6 @@ class Board{
         bool blackCastleKing = 1;
         bool blackCastleQueen = 1;
 
-        bool whiteInCheck = 0;
-        bool blackInCheck = 0;
-
         int halfMoves = 0;
         int fullMoves = 0;
         std::stack<Move> moves;
@@ -118,6 +115,7 @@ class Board{
         void unMovePiece();
         Board(){}
         Board(Board &ref);
+        U64 Perft(int depth);
     private:
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);
@@ -129,6 +127,7 @@ class Board{
         U64 getActualRay(U64 loc, U64 ray, Color color);
         bool isKingInCheck(Color c);
         int getBoard(char piece, Color color);
+
 };
 
 #endif

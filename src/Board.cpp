@@ -254,21 +254,24 @@ void Board::movePiece(U64 newSpot){
     // deal with enpassant here, adding and removing squares
     if(selectedPiece.piece == 'p'){
         // need to check for capture by enpassant first
-        if(newSpot & enpassantLoc){
-            // get rid of old pawn
-            if(selectedPiece.col == WHITE) *boards[board + 6].i ^= (newSpot >> 8);
-            else *boards[board - 6].i ^= (newSpot << 8);
+        if(selectedPiece.col == WHITE && enpassantLoc >= 0x0000000100000000 &&
+            (newSpot & enpassantLoc)){
+            *boards[board + 6].i ^= (newSpot >> 8);
+            captures.push({boards[board + 6].piece, boards[board + 6].col});
             enpassantLoc = 0;
-            special += 1;
+            special += 5;
+        }else if(selectedPiece.col == BLACK && enpassantLoc < 0x0000000100000000 &&
+            (newSpot & enpassantLoc)){
+            *boards[board - 6].i ^= (newSpot << 8);
+            captures.push({boards[board - 6].piece, boards[board - 6].col});
+            enpassantLoc = 0;
+            special += 5;
         }
         // if we can shift 16 and get the new spot we add an enpassant square
         // if we can shift back 8 and theres an enpassant square, remove it
-        if(selectedPiece.col == WHITE){
-            // check to create new squares
-            if(*selectedPiece.i << 16 == newSpot) enpassantLoc = *selectedPiece.i << 8;
-        }else{
-            if(*selectedPiece.i >> 16 == newSpot) enpassantLoc = *selectedPiece.i >> 8;
-        }
+        if((*selectedPiece.i << 16) == newSpot) enpassantLoc = *selectedPiece.i << 8;
+        else if((*selectedPiece.i >> 16) == newSpot) enpassantLoc = *selectedPiece.i >> 8;
+        else enpassantLoc = 0;
     }else{
         enpassantLoc = 0;
     }
@@ -328,14 +331,18 @@ void Board::movePiece(U64 newSpot){
     *boards[board].i |= newSpot;
     moves.push({*selectedPiece.i, newSpot, special, selectedPiece.piece, selectedPiece.col});
     // check if other king is in check
-    bool col = isKingInCheck(selectedPiece.col == WHITE ? BLACK : WHITE);
-    if(col && selectedPiece.col == WHITE) whiteInCheck = true;
-    else if(col && selectedPiece.col == BLACK) blackInCheck = true;
+
+    if(turn == WHITE) turn = BLACK;
+    else turn = WHITE;
 }
 void Board::unMovePiece(){
     Move move = moves.top();
     moves.pop();
     // gets last move
+
+    turn = move.color; // update turn
+    halfMoves--;
+    if(move.color == WHITE) fullMoves--;
 
     // find the board and get piece from it
     int board = getBoard(move.piece, move.color);
@@ -355,26 +362,30 @@ void Board::unMovePiece(){
         else{
             // enpassant capture
             enpassantLoc = move.to; // this is where the pawn went
-            if(piece.second == BLACK) *boards[board].i |= (move.to << 8);
-            else *boards[board].i |= move.to >> 8;
+            if(piece.second == BLACK) *boards[board].i |= (move.to >> 8);
+            else *boards[board].i |= (move.to << 8);
         }
     }else if(move.special == 2){
         // kingside castle
         if(move.color == WHITE){
             *boards[3].i ^= (U64)0x20;
             *boards[3].i |= (U64)0x80;
+            whiteCastleKing = true;
         }else{
             *boards[9].i ^= 0x2000000000000000;
             *boards[9].i |= 0x8000000000000000;
+            blackCastleKing = true;
         }
     }else if(move.special == 3){
         // queenside castle
         if(move.color == WHITE){
             *boards[3].i ^= (U64)0x8;
             *boards[3].i |= (U64)0x1;
+            whiteCastleQueen = true;
         }else{
             *boards[9].i ^= 0x0800000000000000;
             *boards[9].i |= 0x0100000000000000;
+            blackCastleQueen = true;
         }
     }else if(move.special >= 8){
         // promo
@@ -469,7 +480,7 @@ U64 Board::getKingMove(U64 loc, Color color){
     }
     // pieces has what we want for castling
     if(color == WHITE){
-        if(whiteInCheck) return mask;
+        if(isKingInCheck(WHITE)) return mask;
         // cant be in check or castle through/into check
         // no other pieces can be there
         // king moves 2 spaces, and rook jumps to other side
@@ -480,7 +491,7 @@ U64 Board::getKingMove(U64 loc, Color color){
             mask |= loc >> 2;
         }
     }else if(color == BLACK){
-        if(blackInCheck) return mask;
+        if(isKingInCheck(BLACK)) return mask;
 
         if(blackCastleKing && !(pieces & 0x6000000000000000)){
             mask |= loc << 2;
@@ -588,9 +599,9 @@ bool Board::isKingInCheck(Color c){
 
     // first check last piece moved
     Move top = moves.top(); // last piece
-    moves.pop();
+    this->moves.pop();
     Move last = moves.top(); // piece before
-    moves.push(top); // fix moves
+    this->moves.push(top); // fix moves
 
 
     if(c != top.color){
@@ -658,7 +669,7 @@ std::vector<Move> Board::getAllMoves(){
     for(int i = 0; i < 12; i++){
         // loop through each bitboard
         for(int k = 0; k < 63; k++){
-            if(*boards[i].i >> k & 1){
+            if((*boards[i].i >> k) & 1){
                 // there is a piece here
                 U64 mask = generateMoves((U64)1 << k, boards[i].piece, boards[i].col, false);
                 // has all moves of this piece
@@ -667,9 +678,32 @@ std::vector<Move> Board::getAllMoves(){
                 temp.from = *boards[i].i & ((U64)1 << k);
                 temp.piece = boards[i].piece;
                 temp.color = boards[i].col;
+                for(int j = 0; j < 63; j++){
+                    if((mask >> j) & 1){
+                        temp.to = mask & ((U64)1 << j);
+                        newMoves.push_back(temp);
+                    }
+                }
             }
         }
     }
 
     return newMoves;
+}
+U64 Board::Perft(int depth){
+    if(depth == 0) return (U64)1;
+
+    U64 moves = 0;
+    std::vector<Move> possMoves = getAllMoves();
+    Board next(*this);
+    for(int i = 0; i < possMoves.size(); i++){
+        *next.selectedPiece.i = possMoves[i].from;
+        next.selectedPiece.col = possMoves[i].color;
+        next.selectedPiece.piece = possMoves[i].piece;
+        next.movePiece(possMoves[i].to);
+        moves += next.Perft(depth - 1);
+        next.unMovePiece();
+    }
+    
+    return moves;
 }
