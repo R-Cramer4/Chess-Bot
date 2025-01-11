@@ -208,7 +208,6 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
 
     Board next(*this);
     // go through each move and check if it would leave the king in check
-    // TODO Pieces cant capture other pieces that are putting the king in check
     for(int i = 0; i < 63; i++){
         U64 move = (U64)1 << i;
         if(mask & move){
@@ -614,15 +613,22 @@ bool Board::isKingInCheck(Color c){
     Move last = moves.top(); // piece before
     this->moves.push(top); // fix moves
 
+    // If we are looking at the piece before and the last piece had captured it, that cant be in check
+    
 
+
+    bool captured = false;
     if(c != top.color){
         last = top; // check opponents king
+    }else{
+        // check if top captured last
+        if(top.to == last.to) captured = true;
     }
     U64 nextMoves = generateMoves(last.to, last.piece, last.color, false);
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
-    if(*boards[loc].i & nextMoves) return true;
+    if(!captured && *boards[loc].i & nextMoves) return true;
     // checks if there is an intersection between the king we are checking and the moves we generated
     // this works
 

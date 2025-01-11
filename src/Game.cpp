@@ -38,8 +38,9 @@ void Game::Init(string fen){
     } // print boards
     */
 
-    U64 perft = bitboard.Perft(3);
-    cout << "3: " << perft << endl;
+    int depth = 3;
+    U64 perft = bitboard.Perft(depth);
+    cout << depth << " : " << perft << endl;
 }
 void Game::Clear(){
     Resources::Clear();
