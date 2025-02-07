@@ -37,6 +37,7 @@ void Game::Init(string fen, int num){
             U64 perft = bitboard.Perft(i);
             cout << i << " : " << perft << endl;
         }
+        exit(0);
     }
 }
 void Game::Clear(){
@@ -49,7 +50,7 @@ void Game::Render(){
     // color mask
     temp = bitboard.colorMask;
     while(temp != 0){
-        int loc = bitboard.findLoc(temp);
+        int loc = bitboard.getLSLoc(temp);
         drawPiece(loc % 8, loc / 8, WHITE, "mask", renderer);
 
         // temp - 1 << loc
@@ -57,7 +58,7 @@ void Game::Render(){
     }
     temp = bitboard.debugMask;
     while(temp != 0){
-        int loc = bitboard.findLoc(temp);
+        int loc = bitboard.getLSLoc(temp);
         drawPiece(loc % 8, loc / 8, WHITE, "mask", renderer);
 
         // temp - 1 << loc
@@ -67,7 +68,7 @@ void Game::Render(){
     for(int i = 0; i < 12; i++){ // go through all bitboards
         temp = *bitboard.boards[i].i;
         while(temp != 0){
-            int loc = bitboard.findLoc(temp);
+            int loc = bitboard.getLSLoc(temp);
             // find location with x and y
             // draw the piece
             drawPiece(loc % 8, loc / 8, bitboard.boards[i].col, bitboard.boards[i].texture, renderer);

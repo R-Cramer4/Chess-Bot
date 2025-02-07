@@ -1,4 +1,5 @@
 #include "Board.h"
+#include <cassert>
 #include <iostream>
 
 using namespace std;
@@ -155,15 +156,6 @@ Board::Board(Board &ref){
 
     this->turn = ref.turn;
 }
-int Board::findLoc(U64 x){
-    int loc = 0;
-    while((x & 1) != 1){
-        x = x >> 1;
-        loc++;
-        if(loc > 63) return 0;
-    }
-    return loc;
-}
 void Board::printLoc(U64 x){
     printf("0x%016lu\n", x);
 }
@@ -205,8 +197,11 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     // mask holds all of the potential moves
 
     // go through each move and check if it would leave the king in check
-    for(int i = 0; i < 63; i++){
-        U64 move = (U64)1 << i;
+
+    U64 temp = mask;
+    while(temp != 0){
+        U64 move = (temp & -temp);
+        temp ^= move;
         if(mask & move){
             // this is a valid move
             movePiece(loc, color, piece, move); 
@@ -339,6 +334,10 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
         turn = WHITE;
         fullMoves++;
     } 
+    // check if a king was taken, and if so set game over
+    if(*boards[5].i == 0 || *boards[11].i == 0){
+        turn = NONE;
+    }
 }
 void Board::unMovePiece(){
     if(moves.size() == 0) return;
@@ -435,7 +434,7 @@ void Board::unMovePiece(){
 }
 U64 Board::getRookMove(U64 loc, Color color){
     U64 mask = 0;
-    int sq = findLoc(loc);
+    int sq = getLSLoc(loc);
 
     U64 hori = ((U64)0xff << (sq & 56));
     U64 vert = ((U64)0x0101010101010101 << (sq & 7));
@@ -446,7 +445,7 @@ U64 Board::getRookMove(U64 loc, Color color){
 }
 U64 Board::getBishopMove(U64 loc, Color color){
     U64 mask = 0;
-    int sq = findLoc(loc);
+    int sq = getLSLoc(loc);
 
     int diag = 8*(sq & 7) - (sq & 56);
     int nort = -diag & (diag >> 31);
@@ -576,7 +575,7 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     }
     pieces ^= loc; // holds all pieces except loc
     pieces &= ray; // holds all pieces intersecting the ray
-    int sq = findLoc(loc);
+    int sq = getLSLoc(loc);
     for(int i = 0; i < 64; i++){
         if(pieces >> i & 1){
             // has a 1 here
@@ -610,8 +609,6 @@ bool Board::isKingInCheck(Color c){
     this->moves.push(top); // fix moves
 
     // If we are looking at the piece before and the last piece had captured it, that cant be in check
-    
-
 
     bool captured = false;
     if(c != top.color){
@@ -620,11 +617,13 @@ bool Board::isKingInCheck(Color c){
         // check if top captured last
         if(top.to == last.to) captured = true;
     }
-    U64 nextMoves = generateMoves(last.to, last.piece, last.color, false);
+
+    U64 nextMoves = 0;
+    if(last.piece != 'k') nextMoves = generateMoves(last.to, last.piece, last.color, false);
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
-    if(!captured && *boards[loc].i & nextMoves) return true;
+    if(!captured && (*boards[loc].i & nextMoves)) return true;
     // checks if there is an intersection between the king we are checking and the moves we generated
     // this works
 
@@ -676,28 +675,59 @@ int Board::getBoard(char piece, Color color){
     return board;
 }
 
+const int index64[64] = {
+    0,  1, 48,  2, 57, 49, 28,  3,
+   61, 58, 50, 42, 38, 29, 17,  4,
+   62, 55, 59, 36, 53, 51, 43, 22,
+   45, 39, 33, 30, 24, 18, 12,  5,
+   63, 47, 56, 27, 60, 41, 37, 16,
+   54, 35, 52, 21, 44, 32, 23, 11,
+   46, 26, 40, 15, 34, 20, 31, 10,
+   25, 14, 19,  9, 13,  8,  7,  6
+};
+
+/**
+ * bitScanForward
+ * @author Martin Läuter (1997)
+ *         Charles E. Leiserson
+ *         Harald Prokop
+ *         Keith H. Randall
+ * "Using de Bruijn Sequences to Index a 1 in a Computer Word"
+ * @param mask bitboard to scan
+ * @precondition mask != 0
+ * @return index (0..63) of least significant one bit
+ */
+int Board::getLSLoc(U64 mask) {
+   const U64 debruijn64 = U64(0x03f79d71b4cb0a89);
+   assert (mask != 0);
+   return index64[((mask & -mask) * debruijn64) >> 58];
+}
+
+
 std::vector<Move> Board::getAllMoves(){
     std::vector<Move> newMoves;
 
     for(int i = 0; i < 12; i++){
         if(boards[i].col != turn) continue;
         // loop through each bitboard
-        for(int k = 0; k < 63; k++){
-            if((*boards[i].i >> k) & 1){
-                // there is a piece here
-                U64 mask = generateMoves((U64)1 << k, boards[i].piece, boards[i].col, true);
-                // has all moves of this piece
-                if(mask == 0) continue;
-                Move temp;
-                temp.from = *boards[i].i & ((U64)1 << k);
-                temp.piece = boards[i].piece;
-                temp.color = boards[i].col;
-                for(int j = 0; j < 63; j++){
-                    if((mask >> j) & 1){
-                        temp.to = mask & ((U64)1 << j);
-                        newMoves.push_back(temp);
-                    }
-                }
+        U64 locMask = *boards[i].i;
+        while(locMask != 0){
+            U64 loc = (locMask & -locMask); // isolates least significant bit
+            locMask ^= loc; // remove it
+
+            // there is a piece at loc
+            U64 mask = generateMoves(loc, boards[i].piece, boards[i].col, true);
+            // has all moves of this piece
+            if(mask == 0) continue;
+            Move temp;
+            temp.from = *boards[i].i & loc;
+            temp.piece = boards[i].piece;
+            temp.color = boards[i].col;
+            while(mask != 0){
+                loc = (mask & -mask);
+                mask ^= loc; // removes the LSB
+                temp.to = loc;
+                newMoves.push_back(temp);
             }
         }
     }
@@ -710,10 +740,8 @@ U64 Board::Perft(int depth){
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
-        // TODO check for game overs, i think this is what is crashing it 
-        // Maybe check turn, and if gameover, turn == NONE
         movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
-        moves += Perft(depth - 1);
+        if(turn != NONE) moves += Perft(depth - 1);
         unMovePiece();
     }
     

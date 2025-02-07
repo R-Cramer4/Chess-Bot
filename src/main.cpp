@@ -63,6 +63,8 @@ int main(int argc, const char *argv[]){
 
         game->Render();
 
+        if(game->turn == NONE) break;
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

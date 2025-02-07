@@ -1,4 +1,4 @@
-FLAGS = -std=c++20 -g
+FLAGS = -std=c++20 -g -O0
 INC_MAC= -Iinclude -I/opt/homebrew/include -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks 
 GL_MAC= -L/opt/homebrew/Cellar/glfw/3.4/lib -lglfw3 -framework Cocoa -framework OpenGL -framework IOKit
 INC_LINUX= -Iinclude
@@ -35,6 +35,9 @@ $(OBJ)/Board.o: $(SRC)/Board.cpp $(SRC)/Board.h
 
 valgrind: main
 	valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --keep-debuginfo=yes --smc-check=all --track-origins=yes ./main
+
+perft: main
+	/usr/bin/time ./main perft 5
 
 clean:
 	rm -f $(OBJ)/*.o main

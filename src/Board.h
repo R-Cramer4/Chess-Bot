@@ -104,7 +104,7 @@ class Board{
         
 
         Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
-        int findLoc(U64 x);
+        int getLSLoc(U64 mask);
         void printLoc(U64 x);
 
         U64 generateMoves(U64 loc, char type, Color color, bool top);
