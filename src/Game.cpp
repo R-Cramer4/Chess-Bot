@@ -8,7 +8,7 @@
 
 SpriteRenderer *renderer; 
 
-void Game::Init(string fen){
+void Game::Init(string fen, int num){
     // load shaders
     Resources::LoadShader("src/vertex.vert", "src/fragment.frag", nullptr, "sprite");
     // shader config
@@ -29,18 +29,15 @@ void Game::Init(string fen){
 
 
 
-    turn = bitboard.generateBitBoards(fen);
-    /*for(int i = 0; i < 2; i++){
-        for(int j = 0; j < 6; j++){
-            cout << std::bitset<64>(*actBoard.boards[i][j]) << endl;
-        }
-        cout << endl;
-    } // print boards
-    */
+    if(fen == "perft") turn = bitboard.generateBitBoards("");
+    else turn = bitboard.generateBitBoards(fen);
 
-    int depth = 3;
-    U64 perft = bitboard.Perft(depth);
-    cout << depth << " : " << perft << endl;
+    if(fen == "perft"){
+        for(int i = 1; i <= num; i++){
+            U64 perft = bitboard.Perft(i);
+            cout << i << " : " << perft << endl;
+        }
+    }
 }
 void Game::Clear(){
     Resources::Clear();
@@ -108,45 +105,49 @@ bool Game::Update(double x, double y){
 
     // generate potential moves if we click on a piece
     if((bitboard.colorMask & loc) != 0){
-        if(*bitboard.selectedPiece.i != loc && *bitboard.selectedPiece.i != 0){
+        if(*selectedPiece.i != loc && *selectedPiece.i != 0){
             // we didnt click on the same piece twice
             
-            bitboard.movePiece(loc); // move piece
-            if(bitboard.selectedPiece.piece == 'p'){
-                if(bitboard.selectedPiece.col == WHITE){
+            bitboard.movePiece(*selectedPiece.i, selectedPiece.col, selectedPiece.piece, loc); // move piece
+
+
+            Move lastMove = bitboard.moves.top(); 
+            // has to have something because we just called move
+            if(lastMove.piece == 'p'){
+                if(lastMove.color == WHITE){
                     if(loc & 0xff00000000000000){
                         // was a promotion
                         isPawnPromo = loc;
                     }
-                }else if(bitboard.selectedPiece.col == BLACK){
+                }else if(lastMove.color == BLACK){
                     if(loc & (U64)0xff){
                         isPawnPromo = loc;
                     }
                 }
             }
 
-            *bitboard.selectedPiece.i = 0;
+            *selectedPiece.i = 0;
         }
         bitboard.colorMask = 0;
     }else{
         // clicked somewhere not in the mask already
 
-        *bitboard.selectedPiece.i = 0; // sets to be 0 if not already
+        *selectedPiece.i = 0; // sets to be 0 if not already
         for(int i = 0; i < 12; i++){
             if(bitboard.boards[i].col == bitboard.turn && 
                 *bitboard.boards[i].i == (*bitboard.boards[i].i | loc)){
 
                 // update the selected piece
-                *bitboard.selectedPiece.i = loc;
-                bitboard.selectedPiece.piece = bitboard.boards[i].piece;
-                bitboard.selectedPiece.col = bitboard.boards[i].col;
+                *selectedPiece.i = loc;
+                selectedPiece.piece = bitboard.boards[i].piece;
+                selectedPiece.col = bitboard.boards[i].col;
 
                 // If the piece bitboard | loc, this bitboard has been clicked
                 bitboard.colorMask = bitboard.generateMoves(loc, bitboard.boards[i].piece, bitboard.boards[i].col, true);
                 bitboard.colorMask |= loc;
             }
         }
-        if(*bitboard.selectedPiece.i == 0) bitboard.colorMask = loc;
+        if(*selectedPiece.i == 0) bitboard.colorMask = loc;
     }
     if(*bitboard.boards[5].i == 0){
         cout << "Black wins" << endl;

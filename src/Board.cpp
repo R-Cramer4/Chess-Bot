@@ -141,10 +141,6 @@ Board::Board(Board &ref){
     this->blackQueens = ref.blackQueens;
     this->blackKing = ref.blackKing;
 
-    this->selectedPiece.piece = ref.selectedPiece.piece;
-    this->selectedPiece.col = ref.selectedPiece.col;
-    this->selecPieceLoc = ref.selecPieceLoc;
-    
     this->enpassantLoc = ref.enpassantLoc;
 
     this->whiteCastleKing = ref.whiteCastleKing;
@@ -206,18 +202,19 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
 
     int board = getBoard(piece, color);
 
-    Board next(*this);
+    // mask holds all of the potential moves
+
     // go through each move and check if it would leave the king in check
     for(int i = 0; i < 63; i++){
         U64 move = (U64)1 << i;
         if(mask & move){
             // this is a valid move
-            next.movePiece(move); 
-            if(next.isKingInCheck(color)){
+            movePiece(loc, color, piece, move); 
+            if(isKingInCheck(color)){
                 // our king is in check
                 mask ^= move;
             }
-            next.unMovePiece();
+            unMovePiece();
         }
     }
     if(piece == 'k'){
@@ -237,35 +234,34 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     }
     return mask;
 }
-void Board::movePiece(U64 newSpot){
-    if(newSpot & *selectedPiece.i) return;
-    if(selectedPiece.col == NONE) return;
+void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
+    if(newSpot & from) return; // if it is the same spot
+    if(color == NONE) return; // doesnt have a color
     char special = 0;
-    // selected piece has the old piece
     // and we have the spot we are moving to
 
     // need to check if the newSpot is in the other pieces
     for(int i = 0; i < 12; i++){
         if((*boards[i].i & newSpot) != 0){
             *boards[i].i ^= newSpot; // removes that piece
-            special += 4;
-            captures.push({boards[i].piece, boards[i].col});
+            special = 4;
+            captures.push({boards[i].piece, boards[i].col}); // add to capture list
+            break; // exit loop, should be fine
         }
     }
-    if(special > 4) cout << "Capture is too high" << endl;
 
-    int board = getBoard(selectedPiece.piece, selectedPiece.col);
+    int board = getBoard(piece, color); // get board piece is on
 
     // deal with enpassant here, adding and removing squares
-    if(selectedPiece.piece == 'p'){
+    if(piece == 'p'){
         // need to check for capture by enpassant first
-        if(selectedPiece.col == WHITE && enpassantLoc >= 0x0000000100000000 &&
+        if(color == WHITE && enpassantLoc >= 0x0000000100000000 &&
             (newSpot & enpassantLoc)){
             *boards[board + 6].i ^= (newSpot >> 8);
             captures.push({boards[board + 6].piece, boards[board + 6].col});
             enpassantLoc = 0;
             special = 5;
-        }else if(selectedPiece.col == BLACK && enpassantLoc < 0x0000000100000000 &&
+        }else if(color == BLACK && enpassantLoc < 0x0000000100000000 &&
             (newSpot & enpassantLoc)){
             *boards[board - 6].i ^= (newSpot << 8);
             captures.push({boards[board - 6].piece, boards[board - 6].col});
@@ -274,8 +270,8 @@ void Board::movePiece(U64 newSpot){
         }
         // if we can shift 16 and get the new spot we add an enpassant square
         // if we can shift back 8 and theres an enpassant square, remove it
-        if((*selectedPiece.i << 16) == newSpot) enpassantLoc = *selectedPiece.i << 8;
-        else if((*selectedPiece.i >> 16) == newSpot) enpassantLoc = *selectedPiece.i >> 8;
+        if((from << 16) == newSpot) enpassantLoc = from << 8;
+        else if((from >> 16) == newSpot) enpassantLoc = from >> 8;
         else enpassantLoc = 0;
     }else{
         enpassantLoc = 0;
@@ -285,30 +281,30 @@ void Board::movePiece(U64 newSpot){
     // handle castling rights
 
     // king
-    if(selectedPiece.piece == 'k'){
-        if(selectedPiece.col == WHITE){
+    if(piece == 'k'){
+        if(color == WHITE){
             this->whiteCastleQueen = 0;
             this->whiteCastleKing = 0;
         }else{
             this->blackCastleQueen = 0;
             this->blackCastleKing = 0;
         }
-        if(newSpot == *selectedPiece.i << 2){
+        if(newSpot == from << 2){
             // kingside
             special = 2;
 
             // just need to move rook, will move king later
-            if(selectedPiece.col == WHITE){
+            if(color == WHITE){
                 *boards[3].i ^= (U64)0x80;
                 *boards[3].i |= (U64)0x20;
             }else{
                 *boards[9].i ^= 0x8000000000000000;
                 *boards[9].i |= 0x2000000000000000;
             }
-        }else if(newSpot == *selectedPiece.i >> 2){
+        }else if(newSpot == from >> 2){
             special = 3;
             // castling queenside 
-            if(selectedPiece.col == WHITE){
+            if(color == WHITE){
                 *boards[3].i ^= (U64)0x1;
                 *boards[3].i |= (U64)0x8;
             }else{
@@ -318,24 +314,24 @@ void Board::movePiece(U64 newSpot){
         }
     }
     // rook
-    else if(selectedPiece.piece == 'r'){
-        if(selectedPiece.col == WHITE){
-            if(*selectedPiece.i == 0x0000000000000001 && whiteCastleQueen) 
+    else if(piece == 'r'){
+        if(color == WHITE){
+            if(from == 0x0000000000000001 && whiteCastleQueen) 
                 this->whiteCastleQueen = 0;
-            if(*selectedPiece.i == 0x0000000000000080 && whiteCastleKing)
+            if(from == 0x0000000000000080 && whiteCastleKing)
                 this->whiteCastleKing = 0;
         }else{
-            if(*selectedPiece.i == 0x0100000000000000 && blackCastleQueen) 
+            if(from == 0x0100000000000000 && blackCastleQueen) 
                 this->blackCastleQueen = 0;
-            if(*selectedPiece.i == 0x8000000000000000 && blackCastleKing)
+            if(from == 0x8000000000000000 && blackCastleKing)
                 this->blackCastleKing = 0;
         }
     }
 
     // move piece
-    *boards[board].i ^= *selectedPiece.i;
+    *boards[board].i ^= from;
     *boards[board].i |= newSpot;
-    moves.push({*selectedPiece.i, newSpot, special, selectedPiece.piece, selectedPiece.col});
+    moves.push({from, newSpot, special, piece, color});
 
     halfMoves++;
     if(turn == WHITE) turn = BLACK;
@@ -714,7 +710,9 @@ U64 Board::Perft(int depth){
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
-        movePiece(possMoves[i].to);
+        // TODO check for game overs, i think this is what is crashing it 
+        // Maybe check turn, and if gameover, turn == NONE
+        movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
         moves += Perft(depth - 1);
         unMovePiece();
     }

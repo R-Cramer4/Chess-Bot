@@ -72,8 +72,6 @@ class Board{
 
         U64 colorMask = 0;
         U64 debugMask = 0;
-        U64 selecPieceLoc = 0;
-        quad selectedPiece = {&selecPieceLoc, WHITE, "", 'p'};
 
         U64 enpassantLoc = 0;
 
@@ -111,7 +109,7 @@ class Board{
 
         U64 generateMoves(U64 loc, char type, Color color, bool top);
         std::vector<Move> getAllMoves();
-        void movePiece(U64 newSpot);
+        void movePiece(U64 from, Color color, char piece, U64 newSpot);
         void unMovePiece();
         Board(){}
         Board(Board &ref);

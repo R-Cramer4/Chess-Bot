@@ -48,7 +48,8 @@ int main(int argc, const char *argv[]){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // game
-    if(argc > 1) game->Init(argv[1]);
+    if(argc == 2) game->Init(argv[1]);
+    else if(argc == 3) game->Init(argv[1], stoi(argv[2]));
     else game->Init();
 
 
