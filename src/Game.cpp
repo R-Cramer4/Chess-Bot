@@ -37,7 +37,13 @@ void Game::Init(string fen, int num){
             U64 perft = bitboard.Perft(i);
             cout << i << " : " << perft << endl;
         }
-        exit(0);
+        turn = NONE;
+        cout << "Generate moves : " << bitboard.generateMovesCalls << endl;
+        cout << "Get all moves : " << bitboard.getAllMovesCalls << endl;
+        cout << "Move Piece : " << bitboard.movePieceCalls << endl;
+        cout << "Unmove Piece : " << bitboard.unmovePieceCalls << endl;
+        cout << "Is king in check calls : " << bitboard.isKingInCheckCalls << endl;
+        cout << "get board calls : " << bitboard.getBoardCalls << endl;
     }
 }
 void Game::Clear(){

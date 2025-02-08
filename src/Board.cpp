@@ -161,6 +161,7 @@ void Board::printLoc(U64 x){
 }
 
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
+    generateMovesCalls++;
     // if top, generates pseudo legal moves
     // otherwise it generates all legal moves
     U64 mask = 0;
@@ -230,8 +231,8 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     return mask;
 }
 void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
-    if(newSpot & from) return; // if it is the same spot
-    if(color == NONE) return; // doesnt have a color
+    movePieceCalls++;
+    if(newSpot & from || color == NONE) return; // if it is the same spot, or no color
     char special = 0;
     // and we have the spot we are moving to
 
@@ -340,6 +341,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     }
 }
 void Board::unMovePiece(){
+    unmovePieceCalls++;
     if(moves.size() == 0) return;
     Move move = moves.top();
     moves.pop();
@@ -484,7 +486,7 @@ U64 Board::getKingMove(U64 loc, Color color){
         pieces |= *boards[i].i;
     }
     // pieces has what we want for castling
-    if(color == WHITE){
+    if(color == WHITE && (whiteCastleKing || whiteCastleQueen)){
         if(isKingInCheck(WHITE)) return mask;
         // cant be in check or castle through/into check
         // no other pieces can be there
@@ -495,7 +497,7 @@ U64 Board::getKingMove(U64 loc, Color color){
         }else if(whiteCastleQueen && !(pieces & 0x000000000000000e)){
             mask |= loc >> 2;
         }
-    }else if(color == BLACK){
+    }else if(color == BLACK && (blackCastleKing || blackCastleQueen)){
         if(isKingInCheck(BLACK)) return mask;
 
         if(blackCastleKing && !(pieces & 0x6000000000000000)){
@@ -575,14 +577,25 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     }
     pieces ^= loc; // holds all pieces except loc
     pieces &= ray; // holds all pieces intersecting the ray
-    int sq = getLSLoc(loc);
-    for(int i = 0; i < 64; i++){
-        if(pieces >> i & 1){
-            // has a 1 here
-            if(i < sq) locMin = i;
-            else if(locMax == -1) locMax = i;
+
+
+    U64 pieceSq; // compared to loc
+    U64 min = 0;
+    U64 max = 0;
+    while(pieces != 0){
+        pieceSq = (pieces & -pieces); // isolate LSB
+        pieces ^= pieceSq; // remove it
+        
+        if(pieceSq < loc) min = pieceSq;
+        else if(max == 0){
+            max = pieceSq;
+            break;
         }
     }
+    if(min != 0) locMin = getLSLoc(min);
+    if(max != 0) locMax = getLSLoc(max);
+
+
     // locMin is most significant less than sq
     // locMax is least significant greater than sq
     U64 mask = 0xFFFFFFFFFFFFFFFF;
@@ -595,6 +608,8 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     return ray;
 }
 bool Board::isKingInCheck(Color c){
+    isKingInCheckCalls++;
+    // TODO king can walk into check but only to pawn attacks
     if(this->moves.size() < 2) return false;
     // checks for the color that we pass it
     // returns the color of one of the kings if it is in check
@@ -619,7 +634,18 @@ bool Board::isKingInCheck(Color c){
     }
 
     U64 nextMoves = 0;
+    // getting infinate recursive loop, works if i dont call on kings but then they can move into check
     if(last.piece != 'k') nextMoves = generateMoves(last.to, last.piece, last.color, false);
+    else{
+        // handle what to do with king
+        nextMoves |= ((last.to << 1) & ~aFile) | ((last.to >> 1) & ~hFile); // side to side
+        nextMoves |= (last.to << 8) | (last.to >> 8); // up and down
+        nextMoves |= ((last.to << 7) & ~hFile) | ((last.to << 9) & ~aFile); // diags
+        nextMoves |= ((last.to >> 7) & ~aFile) | ((last.to >> 9) & ~hFile); // lower diags
+
+        // next move has all full moves
+        // this is fine because we just need to check against if one of them will capture the king
+    }
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
@@ -648,6 +674,7 @@ bool Board::isKingInCheck(Color c){
     return false;
 }
 int Board::getBoard(char piece, Color color){
+    getBoardCalls++;
     int board = 0;
     switch (piece){
         case 'p':
@@ -668,11 +695,8 @@ int Board::getBoard(char piece, Color color){
         case 'k':
             board = 5;
             break;
-        default:
-            cout << "didnt find piece" << endl;
     }
-    if(color == BLACK) board += 6;
-    return board;
+    return board + (6 * (color == BLACK));
 }
 
 const int index64[64] = {
@@ -705,6 +729,7 @@ int Board::getLSLoc(U64 mask) {
 
 
 std::vector<Move> Board::getAllMoves(){
+    getAllMovesCalls++;
     std::vector<Move> newMoves;
 
     for(int i = 0; i < 12; i++){
