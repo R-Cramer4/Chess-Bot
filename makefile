@@ -5,8 +5,9 @@ INC_LINUX= -Iinclude
 GL_LINUX= -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 SRC = src
 OBJ = obj
+TEST = test
 
-main: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o
+main: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o $(OBJ)/Test.o
 	g++ $^ ${INC_MAC} ${GL_MAC} $(FLAGS) -o main
 
 $(OBJ)/main.o: $(SRC)/main.cpp
@@ -39,7 +40,18 @@ valgrind: main
 perft: main
 	/usr/bin/time ./main perft 5
 
+
+$(OBJ)/Test.o: $(SRC)/Test.cpp $(SRC)/Test.h
+	g++ ${INC_MAC} ${FLAGS} -c $(SRC)/Test.cpp -o $@
+
+testEx: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o $(OBJ)/Test.o
+	g++ $^ ${INC_MAC} ${GL_MAC} $(FLAGS) -o testBot
+
+test: testEx
+	./testBot test $(TEST)/perftsuite.epd $(TEST)/output.epd
+
+
 clean:
-	rm -f $(OBJ)/*.o main
+	rm -f $(OBJ)/*.o main testBot
 
 

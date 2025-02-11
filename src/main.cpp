@@ -1,3 +1,4 @@
+#include "Test.h"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -50,6 +51,11 @@ int main(int argc, const char *argv[]){
     // game
     if(argc == 2) game->Init(argv[1]);
     else if(argc == 3) game->Init(argv[1], stoi(argv[2]));
+    else if(argc == 4){
+        Test(argv[2], argv[3]);
+        glfwTerminate();
+        return 0;
+    }
     else game->Init();
 
 

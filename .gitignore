@@ -1,4 +1,6 @@
 obj/
 main.dSYM/
 main
+testBot
+testBot.dSYM/
 .DS_Store

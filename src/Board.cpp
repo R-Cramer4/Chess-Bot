@@ -104,7 +104,7 @@ Color Board::generateBitBoards(string fen){
                 break;
             case 'q':
                 blackCastleQueen = true;
-                break;
+break;
         }
     }
     otherInfo.erase(otherInfo.begin(), otherInfo.begin() + otherInfo.find(' ') + 1);
@@ -125,6 +125,32 @@ Color Board::generateBitBoards(string fen){
     fullMoves = stoi(otherInfo.substr(0, otherInfo.find(' ')));
 
     return turn;
+}
+void Board::reset(std::string fen){
+    for(int i = 0; i < 12; i++){
+        *boards[i].i = 0;
+    }
+    colorMask = 0;
+    debugMask = 0;
+
+    enpassantLoc = 0;
+
+    whiteCastleKing = 1;
+    whiteCastleQueen = 1;
+    blackCastleKing = 1;
+    blackCastleQueen = 1;
+
+    halfMoves = 0;
+    fullMoves = 0;
+
+    while(!moves.empty()){
+        moves.pop();
+    }
+    while(!captures.empty()){
+        captures.pop();
+    }
+    generateBitBoards(fen);
+
 }
 
 Board::Board(Board &ref){
@@ -157,7 +183,7 @@ Board::Board(Board &ref){
     this->turn = ref.turn;
 }
 void Board::printLoc(U64 x){
-    printf("0x%016lu\n", x);
+    printf("0x%016llu\n", x);
 }
 
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
@@ -486,8 +512,8 @@ U64 Board::getKingMove(U64 loc, Color color){
         pieces |= *boards[i].i;
     }
     // pieces has what we want for castling
+    if(isKingInCheck(color)) return mask;
     if(color == WHITE && (whiteCastleKing || whiteCastleQueen)){
-        if(isKingInCheck(WHITE)) return mask;
         // cant be in check or castle through/into check
         // no other pieces can be there
         // king moves 2 spaces, and rook jumps to other side
@@ -498,7 +524,6 @@ U64 Board::getKingMove(U64 loc, Color color){
             mask |= loc >> 2;
         }
     }else if(color == BLACK && (blackCastleKing || blackCastleQueen)){
-        if(isKingInCheck(BLACK)) return mask;
 
         if(blackCastleKing && !(pieces & 0x6000000000000000)){
             mask |= loc << 2;
@@ -633,6 +658,7 @@ bool Board::isKingInCheck(Color c){
         if(top.to == last.to) captured = true;
     }
 
+    /*
     U64 nextMoves = 0;
     // getting infinate recursive loop, works if i dont call on kings but then they can move into check
     if(last.piece != 'k') nextMoves = generateMoves(last.to, last.piece, last.color, false);
@@ -646,13 +672,34 @@ bool Board::isKingInCheck(Color c){
         // next move has all full moves
         // this is fine because we just need to check against if one of them will capture the king
     }
+    */
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
-    if(!captured && (*boards[loc].i & nextMoves)) return true;
+    //if(!captured && (*boards[loc].i & nextMoves)) return true;
+
     // checks if there is an intersection between the king we are checking and the moves we generated
     // this works
 
+    U64 mask = 0;
+    switch(last.piece){
+        case 'k':
+            mask |= ((last.to << 1) & ~aFile) | ((last.to >> 1) & ~hFile); // side to side
+            mask |= (last.to << 8) | (last.to >> 8); // up and down
+            mask |= ((last.to << 7) & ~hFile) | ((last.to << 9) & ~aFile); // diags
+            mask |= ((last.to >> 7) & ~aFile) | ((last.to >> 9) & ~hFile); // lower diags
+            break;
+        case 'p':
+            mask = getPawnMove(last.to, last.color);
+            break;
+        case 'n':
+            mask = getKnightMove(last.to, last.color); // get the knight moves from the king, not masking the moves
+            break;
+    }
+    if(mask != 0 && (mask & *boards[loc].i)) return true; // intersection
+
+    // Below checks for revealed pins, and moves into check by a sliding piece
+    // TODO need to figure out knight, king, and pawn checks
     // what about revealed pins
     // only need to worry about rooks, bishops, and queens
     // can generate all sliding moves from my king
@@ -668,7 +715,7 @@ bool Board::isKingInCheck(Color c){
     if((*boards[2 + col].i & bishopRays) ||
         (*boards[3 + col].i & rookRays) ||
         (*boards[4 + col].i & (rookRays | bishopRays))){
-        // bishop, rook, king
+        // bishop, rook, queen
         return true; 
     } 
     return false;
