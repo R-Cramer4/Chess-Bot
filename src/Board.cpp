@@ -91,7 +91,7 @@ Color Board::generateBitBoards(string fen){
             cout << otherInfo[0] << " <- got this instead" << endl;
     }
     otherInfo.erase(otherInfo.begin(), otherInfo.begin() + otherInfo.find(' ') + 1);
-    for(int i = 0; i < 4; i++){
+    for(int i = 0; i < otherInfo.find(' '); i++){
         switch(otherInfo[i]){
             case 'K':
                 whiteCastleKing = true;
@@ -104,7 +104,7 @@ Color Board::generateBitBoards(string fen){
                 break;
             case 'q':
                 blackCastleQueen = true;
-break;
+                break;
         }
     }
     otherInfo.erase(otherInfo.begin(), otherInfo.begin() + otherInfo.find(' ') + 1);
@@ -260,6 +260,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     movePieceCalls++;
     if(newSpot & from || color == NONE) return; // if it is the same spot, or no color
     char special = 0;
+    char castlingRights = '0';
     // and we have the spot we are moving to
 
     // need to check if the newSpot is in the other pieces
@@ -307,9 +308,11 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
         if(color == WHITE){
             this->whiteCastleQueen = 0;
             this->whiteCastleKing = 0;
+            castlingRights = 'W';
         }else{
             this->blackCastleQueen = 0;
             this->blackCastleKing = 0;
+            castlingRights = 'B';
         }
         if(newSpot == from << 2){
             // kingside
@@ -338,22 +341,30 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     // rook
     else if(piece == 'r'){
         if(color == WHITE){
-            if(from == 0x0000000000000001 && whiteCastleQueen) 
+            if(from == 0x0000000000000001 && whiteCastleQueen){
                 this->whiteCastleQueen = 0;
-            if(from == 0x0000000000000080 && whiteCastleKing)
+                castlingRights = 'Q';
+            }
+            if(from == 0x0000000000000080 && whiteCastleKing){
                 this->whiteCastleKing = 0;
+                castlingRights = 'K';
+            }
         }else{
-            if(from == 0x0100000000000000 && blackCastleQueen) 
+            if(from == 0x0100000000000000 && blackCastleQueen){
                 this->blackCastleQueen = 0;
-            if(from == 0x8000000000000000 && blackCastleKing)
+                castlingRights = 'q';
+            } 
+            if(from == 0x8000000000000000 && blackCastleKing){
                 this->blackCastleKing = 0;
+                castlingRights = 'k';
+            }
         }
     }
 
     // move piece
     *boards[board].i ^= from;
     *boards[board].i |= newSpot;
-    moves.push({from, newSpot, special, piece, color});
+    moves.push({from, newSpot, special, piece, color, castlingRights});
 
     halfMoves++;
     if(turn == WHITE) turn = BLACK;
@@ -367,6 +378,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     }
 }
 void Board::unMovePiece(){
+    // TODO restore castling rights on rook/king move
     unmovePieceCalls++;
     if(moves.size() == 0) return;
     Move move = moves.top();
@@ -458,6 +470,28 @@ void Board::unMovePiece(){
                 *boards[4 + col].i ^= move.to;
                 break;
         }
+    }
+    switch (move.castleRight) {
+        case 'K':
+            whiteCastleKing = 1;
+            break;
+        case 'Q':
+            whiteCastleQueen = 1;
+            break;
+        case 'k':
+            blackCastleKing = 1;
+            break;
+        case 'q':
+            blackCastleQueen = 1;
+            break;
+        case 'W':
+            whiteCastleQueen = 1;
+            whiteCastleKing = 1;
+            break;
+        case 'B':
+            blackCastleQueen = 1;
+            blackCastleKing = 1;
+            break;
     }
 }
 U64 Board::getRookMove(U64 loc, Color color){
@@ -626,13 +660,14 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     // locMax is least significant greater than sq
     U64 mask = 0xFFFFFFFFFFFFFFFF;
     if(locMax != -1) ray = ray & (mask >> (63 - locMax));
-    // shifts to the right so everything more significant than locMax is a 0
+// shifts to the right so everything more significant than locMax is a 0
     if(locMin != -1) ray = ray & (mask << locMin); // same deal
 
     ray = ray & ~(ray & colPieces); // shouldnt be able to capture own pieces
 
     return ray;
 }
+
 bool Board::isKingInCheck(Color c){
     // TODO rewrite function
     isKingInCheckCalls++;
@@ -722,6 +757,113 @@ bool Board::isKingInCheck(Color c){
     } 
     return false;
 }
+
+
+/*
+bool Board::isKingInCheck(Color c){
+    // this king can only be in check if the last move put it in check
+    // what if white just moved and checking if white is in check
+    //      the only way this would happen is if this was a revealed pin or 
+    //      the king had been in check from the previous black move
+    //      white could have captured the checking piece though
+    // so in the case we are checking the case of the most recent move
+    //      Unmove, and call on this king color
+    //      make move again and check for revealed pins by 
+    //      generating the queen moves from king pos
+    //
+    //  other case is the normal one where we are checking if white in check if black just moved
+    //      get queen move from the king
+    //          this handles revealed pins, check by rook, queen, and bishop if they just moved
+    //      still have pawn, knight, king
+    //          knight - generate a knight move from the king and check if intersect with
+    //              other color knights
+    //          pawn - generate that pawns next move and see if it intersects with king
+    //          king - shouldn't be able to move but same thing, generate king moves
+    //          so all three - generate next move
+    //
+    //
+    // so for either of these cases
+    //      generate queen move from king and check for intersection
+    //
+    //      get last other color move, and generate next move if it was a pawn, knight, or king
+    //      if that last move was two moves down, just need to make sure it wasn't captured
+
+    if(moves.size() < 2) return false;
+
+    Move otherColMove;
+    if(c == moves.top().color){
+        // we just moved
+        // get second to last move
+        //      but also need to check to make sure it wasnt captured
+        //
+        //      top.to == secondTop.to means that it was captured
+        Move temp = moves.top();
+        U64 topTo = temp.to;
+        moves.pop();
+        otherColMove = moves.top(); // second to top
+        moves.push(temp);
+
+        if(otherColMove.to == topTo){
+            // it was captured
+            return false;
+            // TODO idk if i can actually do this but I think I can because
+            //      a double check means checkmate?
+        }
+        // otherwise not captured and might still be checking
+    }else{
+        otherColMove = moves.top();
+    }
+
+    // get the board the king is in
+    int loc = 0;
+    if(c == boards[11].col) loc = 11;
+    else loc = 5;
+
+    // generate queen moves from the king
+    U64 rookRays = getRookMove(*boards[loc].i, boards[loc].col);
+    U64 bishopRays = getBishopMove(*boards[loc].i, boards[loc].col);
+    // have rays, they are intersected with opponent pieces if can reach
+    // go through bishop, rook, queen
+    int col = 0; // for c's pieces, need for !c's pieces
+    if(loc == 5) col = 6;
+    
+    if((*boards[2 + col].i & bishopRays) ||
+        (*boards[3 + col].i & rookRays) ||
+        (*boards[4 + col].i & (rookRays | bishopRays))){
+        // bishop, rook, queen
+        return true; 
+        // if returned from here, something was checking and we found it
+    }
+
+    // now handle the case of pawn, knight, or king
+    U64 mask = 0;
+    switch (otherColMove.piece) {
+        case 'p':
+            mask = getPawnMove(otherColMove.to, otherColMove.color);
+            break;
+        case 'n':
+            mask = getKnightMove(otherColMove.to, otherColMove.color);
+            break;
+        case 'k':
+            // generate king moves without checking (Hopefully is fine)
+            mask |= ((otherColMove.to << 1) & ~aFile) | ((otherColMove.to >> 1) & ~hFile); // side to side
+            mask |= (otherColMove.to << 8) | (otherColMove.to >> 8); // up and down
+            mask |= ((otherColMove.to << 7) & ~hFile) | ((otherColMove.to << 9) & ~aFile); // diags
+            mask |= ((otherColMove.to >> 7) & ~aFile) | ((otherColMove.to >> 9) & ~hFile); // lower diags
+            break;
+        
+        // if we have anything else it is because we passed earlier checks
+    }
+    if(mask & *boards[loc].i){
+        // have intersection with the given mask
+        return true;
+    }
+
+    // if we get here all checks passed
+    return false;
+    
+}
+*/
 int Board::getBoard(char piece, Color color){
     getBoardCalls++;
     int board = 0;

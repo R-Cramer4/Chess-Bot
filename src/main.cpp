@@ -17,6 +17,11 @@ const unsigned int SCR_HEIGHT = 800;
 Game *game = new Game();
 
 int main(int argc, const char *argv[]){
+    if(argc == 4){
+        Test(argv[2], argv[3]);
+        glfwTerminate();
+        return 0;
+    }
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -51,11 +56,6 @@ int main(int argc, const char *argv[]){
     // game
     if(argc == 2) game->Init(argv[1]);
     else if(argc == 3) game->Init(argv[1], stoi(argv[2]));
-    else if(argc == 4){
-        Test(argv[2], argv[3]);
-        glfwTerminate();
-        return 0;
-    }
     else game->Init();
 
 

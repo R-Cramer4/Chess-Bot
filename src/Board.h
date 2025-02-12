@@ -38,6 +38,13 @@ struct Move{
     // 10 = rook promo
     // 11 = queen promo
     // 12 - 15 = promo with capture
+    char castleRight;
+    // K = taken away white kingside castle
+    // Q = taken away white queenside castle
+    // k = taken away black kingside castle
+    // q = taken away black queenside castle
+    // W = taken away both white castles
+    // B = taken away both black castles
 };
 
 const U64 aFile =         0x0101010101010101;
@@ -75,10 +82,10 @@ class Board{
 
         U64 enpassantLoc = 0;
 
-        bool whiteCastleKing = 1;
-        bool whiteCastleQueen = 1;
-        bool blackCastleKing = 1;
-        bool blackCastleQueen = 1;
+        bool whiteCastleKing = 0;
+        bool whiteCastleQueen = 0;
+        bool blackCastleKing = 0;
+        bool blackCastleQueen = 0;
 
         int halfMoves = 0;
         int fullMoves = 0;

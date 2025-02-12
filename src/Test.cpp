@@ -1,4 +1,5 @@
 #include "Test.h"
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -19,12 +20,13 @@ void Test(string input, string output){
 
     int numSucceed = 0;
     string inString, outString;
-    // TODO Multi thread
 
-    // TODO Time total time taken
+    // time taken
+    chrono::time_point<chrono::steady_clock> fullTestStart = chrono::steady_clock::now();
     int i = 0;
     while(getline(in, inString)){
-        // TODO time each test case
+        // time each test
+        chrono::time_point<chrono::steady_clock> testStart = chrono::steady_clock::now();
         i++;
         testBoard temp = parseString(inString); // get testBoard
         testBoard res = perftTest(temp); // test the testBoard and get result
@@ -33,6 +35,7 @@ void Test(string input, string output){
         out << outString << endl; // output
 
         numSucceed += printTestResult(temp, res, i);
+        cout << "Test " << i << " took " << chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - testStart).count() << "ms" << endl;
     }
 
     in.close();
@@ -45,7 +48,8 @@ void Test(string input, string output){
     }else{
         cout << "\033[1m" << numSucceed << "/" << i << " of tests passed\033[0m\n";
     }
-    // TODO Add time info here
+    // time full tests
+    cout << "Tests took " << chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - fullTestStart).count() << "ms" << endl;
 }
 
 testBoard perftTest(testBoard in){
@@ -57,6 +61,8 @@ testBoard perftTest(testBoard in){
 
     Board b;
     b.generateBitBoards(in.fen);
+
+    // TODO Multithread here
 
     out.d1 = b.Perft(1);
     b.reset(in.fen);
