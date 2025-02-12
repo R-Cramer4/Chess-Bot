@@ -589,6 +589,7 @@ U64 Board::getKnightMove(U64 loc, Color color){
     return mask;
 }
 U64 Board::getActualRay(U64 loc, U64 ray, Color color){
+    // TODO make more efficient
     // get the most significant 1 that is intersecting the ray while being less significant than loc
     // get the least significant 1 that is intersecting the ray while being more significant than loc
 
@@ -633,6 +634,7 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     return ray;
 }
 bool Board::isKingInCheck(Color c){
+    // TODO rewrite function
     isKingInCheckCalls++;
     // TODO king can walk into check but only to pawn attacks
     if(this->moves.size() < 2) return false;

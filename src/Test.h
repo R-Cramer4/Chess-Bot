@@ -21,7 +21,7 @@ string makeString(testBoard b);
 
 testBoard perftTest(testBoard in);
 
-void printTestResult(testBoard in, testBoard out, int num);
+bool printTestResult(testBoard in, testBoard out, int num);
 void printBoard(testBoard b);
 
 #endif

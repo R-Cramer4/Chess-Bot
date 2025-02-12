@@ -17,10 +17,14 @@ void Test(string input, string output){
         cout << "output didn't open" << endl;
     }
 
+    int numSucceed = 0;
     string inString, outString;
+    // TODO Multi thread
 
+    // TODO Time total time taken
     int i = 0;
     while(getline(in, inString)){
+        // TODO time each test case
         i++;
         testBoard temp = parseString(inString); // get testBoard
         testBoard res = perftTest(temp); // test the testBoard and get result
@@ -28,11 +32,20 @@ void Test(string input, string output){
         // probably should check results
         out << outString << endl; // output
 
-        printTestResult(temp, res, i);
+        numSucceed += printTestResult(temp, res, i);
     }
 
     in.close();
     out.close();
+
+    if(numSucceed == i){
+        cout << "\033[1;32mAll Tests Passed\033[0m\n";
+    }else if(numSucceed == 0){
+        cout << "\033[1;31mAll Tests Failed\033[0m\n";
+    }else{
+        cout << "\033[1m" << numSucceed << "/" << i << " of tests passed\033[0m\n";
+    }
+    // TODO Add time info here
 }
 
 testBoard perftTest(testBoard in){
@@ -108,38 +121,39 @@ string makeString(testBoard b){
     out += " ;D6 " + to_string(b.d6);
     return out;
 }
-void printTestResult(testBoard in, testBoard out, int num){
+bool printTestResult(testBoard in, testBoard out, int num){
     cout << "\033[1mTest " << num << ":\033[0m\n"; // bolded
     bool succeed = true;
     if(in.d1 != out.d1){
         succeed = false;
-        cout << "\t" << in.d1 << " : " << out.d1 << "\n";
+        cout << "\tD1:\t" << in.d1 << " : " << out.d1 << "\n";
     }
     if(in.d2 != out.d2){
         succeed = false;
-        cout << "\t" << in.d2 << " : " << out.d2 << "\n";
+        cout << "\tD2:\t" << in.d2 << " : " << out.d2 << "\n";
     }
     if(in.d3 != out.d3){
         succeed = false;
-        cout << "\t" << in.d3 << " : " << out.d3 << "\n";
+        cout << "\tD3:\t" << in.d3 << " : " << out.d3 << "\n";
     }
     if(in.d4 != out.d4){
         succeed = false;
-        cout << "\t" << in.d4 << " : " << out.d4 << "\n";
+        cout << "\tD4:\t" << in.d4 << " : " << out.d4 << "\n";
     }
     if(in.d5 != out.d5){
         succeed = false;
-        cout << "\t" << in.d5 << " : " << out.d5 << "\n";
+        cout << "\tD5:\t" << in.d5 << " : " << out.d5 << "\n";
     }
     if(in.d6 != out.d6){
         succeed = false;
-        cout << "\t" << in.d6 << " : " << out.d6 << "\n";
+        cout << "\tD6:\t" << in.d6 << " : " << out.d6 << "\n";
     }
     if(succeed){
         cout << "\033[1;32mPassed\033[0m\n";
     }else{
-        cout << "\033[1;31mFailed\033[0m\n";
+        cout << "\033[1;31mFailed\033[0m\t\t" << in.fen << "\n";
     }
+    return succeed;
 }
 void printBoard(testBoard b){
     cout << b.fen << endl;
