@@ -116,19 +116,13 @@ class Board{
         void printLoc(U64 x);
 
         U64 generateMoves(U64 loc, char type, Color color, bool top);
-        int generateMovesCalls = 0;
         std::vector<Move> getAllMoves();
-        int getAllMovesCalls = 0;
         void movePiece(U64 from, Color color, char piece, U64 newSpot);
-        int movePieceCalls = 0;
         void unMovePiece();
-        int unmovePieceCalls = 0;
         Board(){}
         Board(Board &ref);
         U64 Perft(int depth);
 
-        int isKingInCheckCalls = 0;
-        int getBoardCalls = 0;
     private:
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);

@@ -187,7 +187,6 @@ void Board::printLoc(U64 x){
 }
 
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
-    generateMovesCalls++;
     // if top, generates pseudo legal moves
     // otherwise it generates all legal moves
     U64 mask = 0;
@@ -257,7 +256,6 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     return mask;
 }
 void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
-    movePieceCalls++;
     if(newSpot & from || color == NONE) return; // if it is the same spot, or no color
     char special = 0;
     char castlingRights = '0';
@@ -379,7 +377,6 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
 }
 void Board::unMovePiece(){
     // TODO restore castling rights on rook/king move
-    unmovePieceCalls++;
     if(moves.size() == 0) return;
     Move move = moves.top();
     moves.pop();
@@ -667,10 +664,9 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
 
     return ray;
 }
-
+/*
 bool Board::isKingInCheck(Color c){
     // TODO rewrite function
-    isKingInCheckCalls++;
     // TODO king can walk into check but only to pawn attacks
     if(this->moves.size() < 2) return false;
     // checks for the color that we pass it
@@ -695,7 +691,6 @@ bool Board::isKingInCheck(Color c){
         if(top.to == last.to) captured = true;
     }
 
-    /*
     U64 nextMoves = 0;
     // getting infinate recursive loop, works if i dont call on kings but then they can move into check
     if(last.piece != 'k') nextMoves = generateMoves(last.to, last.piece, last.color, false);
@@ -709,7 +704,7 @@ bool Board::isKingInCheck(Color c){
         // next move has all full moves
         // this is fine because we just need to check against if one of them will capture the king
     }
-    */
+    
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
@@ -757,9 +752,8 @@ bool Board::isKingInCheck(Color c){
     } 
     return false;
 }
+*/
 
-
-/*
 bool Board::isKingInCheck(Color c){
     // this king can only be in check if the last move put it in check
     // what if white just moved and checking if white is in check
@@ -863,9 +857,8 @@ bool Board::isKingInCheck(Color c){
     return false;
     
 }
-*/
+
 int Board::getBoard(char piece, Color color){
-    getBoardCalls++;
     int board = 0;
     switch (piece){
         case 'p':
@@ -920,7 +913,6 @@ int Board::getLSLoc(U64 mask) {
 
 
 std::vector<Move> Board::getAllMoves(){
-    getAllMovesCalls++;
     std::vector<Move> newMoves;
 
     for(int i = 0; i < 12; i++){
