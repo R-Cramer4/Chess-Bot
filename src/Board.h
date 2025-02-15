@@ -45,6 +45,14 @@ struct Move{
     // q = taken away black queenside castle
     // W = taken away both white castles
     // B = taken away both black castles
+    bool operator==(Move m){
+        return m.to == this->to &&
+                m.from == this->from &&
+                m.piece == this->piece &&
+                m.color == this->color && 
+                m.special == this->special && 
+                m.castleRight == this->castleRight;
+    }
 };
 
 const U64 aFile =         0x0101010101010101;
@@ -122,6 +130,7 @@ class Board{
         Board(){}
         Board(Board &ref);
         U64 Perft(int depth);
+        void printBoardState();
 
     private:
         U64 getRookMove(U64 loc, Color color);
@@ -134,6 +143,7 @@ class Board{
         U64 getActualRay(U64 loc, U64 ray, Color color);
         bool isKingInCheck(Color c);
         int getBoard(char piece, Color color);
+        
 
 };
 
