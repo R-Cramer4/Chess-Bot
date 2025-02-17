@@ -140,6 +140,7 @@ class Board{
         Board(Board &ref);
         U64 Perft(int depth);
         void printBoardState();
+        std::string getMove(Move m);
 
     private:
         U64 getRookMove(U64 loc, Color color);
@@ -152,8 +153,7 @@ class Board{
         U64 getActualRay(U64 loc, U64 ray, Color color);
         bool isKingInCheck(Color c);
         int getBoard(char piece, Color color);
-        
-
+        std::string boardToLoc(U64 board);
 };
 
 #endif

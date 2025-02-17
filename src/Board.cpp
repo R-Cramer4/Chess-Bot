@@ -135,7 +135,7 @@ void Board::reset(std::string fen){
 
     enpassantLoc = 0;
 
-whiteCastleKing = 1;
+    whiteCastleKing = 1;
     whiteCastleQueen = 1;
     blackCastleKing = 1;
     blackCastleQueen = 1;
@@ -380,7 +380,6 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     }
 }
 void Board::unMovePiece(){
-    // TODO restore castling rights on rook/king move
     if(moves.size() == 0) return;
     Move move = moves.top();
     moves.pop();
@@ -500,7 +499,7 @@ U64 Board::getRookMove(U64 loc, Color color){
     int sq = getLSLoc(loc);
 
     U64 hori = ((U64)0xff << (sq & 56));
-    U64 vert = ((U64)0x0101010101010101 << (sq & 7));
+    U64 vert = (aFile << (sq & 7));
     mask |= getActualRay(loc, hori, color);
     mask |= getActualRay(loc, vert, color);
 
@@ -661,7 +660,7 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     // locMax is least significant greater than sq
     U64 mask = 0xFFFFFFFFFFFFFFFF;
     if(locMax != -1) ray = ray & (mask >> (63 - locMax));
-// shifts to the right so everything more significant than locMax is a 0
+    // shifts to the right so everything more significant than locMax is a 0
     if(locMin != -1) ray = ray & (mask << locMin); // same deal
 
     ray = ray & ~(ray & colPieces); // shouldnt be able to capture own pieces
@@ -670,46 +669,22 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
 }
 
 bool Board::isKingInCheck(Color c){
-    // this king can only be in check if the last move put it in check
-    // what if white just moved and checking if white is in check
-    //      the only way this would happen is if this was a revealed pin or 
-    //      the king had been in check from the previous black move
-    //      white could have captured the checking piece though
-    // so in the case we are checking the case of the most recent move
-    //      Unmove, and call on this king color
-    //      make move again and check for revealed pins by 
-    //      generating the queen moves from king pos
-    //
-    //  other case is the normal one where we are checking if white in check if black just moved
-    //      get queen move from the king
-    //          this handles revealed pins, check by rook, queen, and bishop if they just moved
-    //      still have pawn, knight, king
-    //          knight - generate a knight move from the king and check if intersect with
-    //              other color knights
-    //          pawn - generate that pawns next move and see if it intersects with king
-    //          king - shouldn't be able to move but same thing, generate king moves
-    //          so all three - generate next move
-    //
-    //
-    // so for either of these cases
-    //      generate queen move from king and check for intersection
-    //
-    //      get last other color move, and generate next move if it was a pawn, knight, or king
-    //      if that last move was two moves down, just need to make sure it wasn't captured
-
     // get the board the king is in
     int loc = 0;
     if(c == boards[11].col) loc = 11;
     else loc = 5;
 
+    U64 kingLoc = *boards[loc].i;
+
     // generate queen moves from the king
-    U64 rookRays = getRookMove(*boards[loc].i, boards[loc].col);
-    U64 bishopRays = getBishopMove(*boards[loc].i, boards[loc].col);
+    U64 rookRays = getRookMove(kingLoc, boards[loc].col);
+    U64 bishopRays = getBishopMove(kingLoc, boards[loc].col);
     // have rays, they are intersected with opponent pieces if can reach
     // go through bishop, rook, queen
     int col = 0; // for c's pieces, need for !c's pieces
     if(loc == 5) col = 6;
     
+    // checks if rays from the king intersect the bishops, rooks, or queens
     if((*boards[2 + col].i & bishopRays) ||
         (*boards[3 + col].i & rookRays) ||
         (*boards[4 + col].i & (rookRays | bishopRays))){
@@ -718,10 +693,26 @@ bool Board::isKingInCheck(Color c){
         // if returned from here, something was checking and we found it
     }
 
+    int otherLoc = (loc + 6) % 12;
+
+    // generates a knight move from king
+    U64 knights = *boards[otherLoc - 4].i;
+    U64 knightMoveFromKing = 0;
+    knightMoveFromKing |= ((kingLoc << 17) & ~aFile);
+    knightMoveFromKing |= ((kingLoc << 10) & ~abFile);
+    knightMoveFromKing |= ((kingLoc >> 6) & ~abFile);
+    knightMoveFromKing |= ((kingLoc >> 15) & ~aFile);
+
+    knightMoveFromKing |= ((kingLoc >> 17) & ~hFile);
+    knightMoveFromKing |= ((kingLoc >> 10) & ~ghFile);
+    knightMoveFromKing |= ((kingLoc << 6) & ~ghFile);
+    knightMoveFromKing |= ((kingLoc << 15) & ~hFile);
+    if(knightMoveFromKing & knights) return true; // returns if a knight can attack the king
+    // above is similar to how we check for the ray attacks
+
     U64 mask = 0;
     // because we are checking if the king walked into check
     // so we need to check against all pawns, knights, and the other king
-    int otherLoc = (loc + 6) % 12;
     U64 pieceSq = 0;
     Color notC = (c == WHITE ? BLACK : WHITE);
     // need to go through all of the pawns, knights, and the king
@@ -742,23 +733,8 @@ bool Board::isKingInCheck(Color c){
         else mask |= ((pieceSq >> 7) & ~hFile) | ((pieceSq >> 9) & ~aFile);
     }
     
-    // knights
-    pieces = *boards[otherLoc - 4].i;
-    while(pieces != 0){
-        pieceSq = (pieces & -pieces);
-        pieces ^= pieceSq;
-        mask |= ((pieceSq << 17) & ~aFile);
-        mask |= ((pieceSq << 10) & ~abFile);
-        mask |= ((pieceSq >> 6) & ~abFile);
-        mask |= ((pieceSq >> 15) & ~aFile);
 
-        mask |= ((pieceSq >> 17) & ~hFile);
-        mask |= ((pieceSq >> 10) & ~ghFile);
-        mask |= ((pieceSq << 6) & ~ghFile);
-        mask |= ((pieceSq << 15) & ~hFile);
-    }
-
-    return mask & *boards[loc].i; // true if intersection, false otherwise
+    return mask & kingLoc; // true if intersection, false otherwise
     
 }
 int Board::isGameOver(){
@@ -937,14 +913,22 @@ std::vector<Move> Board::getAllMoves(){
 }
 U64 Board::Perft(int depth){
     if(depth == 0) return 1;
+    // TODO This function is over counting moves
+    // its because im spawning rooks somewhere that I cant find
 
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
+        if(depth == 4){
+            cout << getMove(possMoves[i]) << " ";
+        }else if(depth == 5){
+            cout << getMove(possMoves[i]) << ": ";
+        }
         movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
         if(!isGameOver() && turn != NONE) moves += Perft(depth - 1);
         unMovePiece();
     }
+    if(depth == 4) cout << endl << endl;
     
     return moves;
 }
@@ -956,4 +940,26 @@ void Board::printBoardState(){
     cout << halfMoves << " " << fullMoves << endl;
     cout << "Moves: " << moves.size() << endl;
     cout << "Cap: " << captures.size() << endl;
+}
+string Board::getMove(Move m){
+    string move = "";
+    if(m.piece != 'p'){
+        move += (m.piece - 0x20); // shifts to uppercase
+    }
+    move += boardToLoc(m.from);
+    if(m.special & 4) move += 'x';
+    move += boardToLoc(m.to);
+
+    if(m.color == WHITE) move += 'W';
+    else move += 'B';
+
+    return move;
+}
+string Board::boardToLoc(U64 board){
+    string loc = "";
+    int sq = getLSLoc(board);
+    if(sq > 32 && sq % 8 == 0) loc += 'h';
+    else loc += 'a' + (sq % 8);
+    loc += '1' + (sq / 8);
+    return loc;
 }
