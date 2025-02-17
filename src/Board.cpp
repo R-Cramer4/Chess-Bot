@@ -135,7 +135,7 @@ void Board::reset(std::string fen){
 
     enpassantLoc = 0;
 
-    whiteCastleKing = 1;
+whiteCastleKing = 1;
     whiteCastleQueen = 1;
     blackCastleKing = 1;
     blackCastleQueen = 1;
@@ -388,7 +388,7 @@ void Board::unMovePiece(){
 
     turn = move.color; // update turn
     halfMoves--;
-    if(move.color == WHITE) fullMoves--;
+    if(move.color == BLACK) fullMoves--;
 
     // find the board and get piece from it
     int board = getBoard(move.piece, move.color);
@@ -668,95 +668,6 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
 
     return ray;
 }
-/*
-bool Board::isKingInCheck(Color c){
-    // TODO rewrite function
-    // TODO king can walk into check but only to pawn attacks
-    if(this->moves.size() < 2) return false;
-    // checks for the color that we pass it
-    // returns the color of one of the kings if it is in check
-
-    // both kings can never be in check at same time
-    // so the only way a king would be in chekc is if the last move put it in check
-
-    // first check last piece moved
-    Move top = moves.top(); // last piece
-    this->moves.pop();
-    Move last = moves.top(); // piece before
-    this->moves.push(top); // fix moves
-
-    // If we are looking at the piece before and the last piece had captured it, that cant be in check
-
-    bool captured = false;
-    if(c != top.color){
-        last = top; // check opponents king
-    }else{
-        // check if top captured last
-        if(top.to == last.to) captured = true;
-    }
-
-    U64 nextMoves = 0;
-    // getting infinate recursive loop, works if i dont call on kings but then they can move into check
-    if(last.piece != 'k') nextMoves = generateMoves(last.to, last.piece, last.color, false);
-    else{
-        // handle what to do with king
-        nextMoves |= ((last.to << 1) & ~aFile) | ((last.to >> 1) & ~hFile); // side to side
-        nextMoves |= (last.to << 8) | (last.to >> 8); // up and down
-        nextMoves |= ((last.to << 7) & ~hFile) | ((last.to << 9) & ~aFile); // diags
-        nextMoves |= ((last.to >> 7) & ~aFile) | ((last.to >> 9) & ~hFile); // lower diags
-
-        // next move has all full moves
-        // this is fine because we just need to check against if one of them will capture the king
-    }
-    
-    int loc = 0;
-    if(c == boards[11].col) loc = 11;
-    else loc = 5;
-    //if(!captured && (*boards[loc].i & nextMoves)) return true;
-
-    // checks if there is an intersection between the king we are checking and the moves we generated
-    // this works
-
-    U64 mask = 0;
-    switch(last.piece){
-        case 'k':
-            mask |= ((last.to << 1) & ~aFile) | ((last.to >> 1) & ~hFile); // side to side
-            mask |= (last.to << 8) | (last.to >> 8); // up and down
-            mask |= ((last.to << 7) & ~hFile) | ((last.to << 9) & ~aFile); // diags
-            mask |= ((last.to >> 7) & ~aFile) | ((last.to >> 9) & ~hFile); // lower diags
-            break;
-        case 'p':
-            mask = getPawnMove(last.to, last.color);
-            break;
-        case 'n':
-            mask = getKnightMove(last.to, last.color); // get the knight moves from the king, not masking the moves
-            break;
-    }
-    if(mask != 0 && (mask & *boards[loc].i)) return true; // intersection
-
-    // Below checks for revealed pins, and moves into check by a sliding piece
-    // TODO need to figure out knight, king, and pawn checks
-    // what about revealed pins
-    // only need to worry about rooks, bishops, and queens
-    // can generate all sliding moves from my king
-    // if i mask my own pieces and then if it intersects with sliding pieces who can make that move, the king is in check
-
-    U64 rookRays = getRookMove(*boards[loc].i, boards[loc].col);
-    U64 bishopRays = getBishopMove(*boards[loc].i, boards[loc].col);
-    // have rays, they are intersected with opponent pieces if can reach
-    // go through bishop, rook, queen
-    int col = 0; // for c's pieces, need for !c's pieces
-    if(loc == 5) col = 6;
-    
-    if((*boards[2 + col].i & bishopRays) ||
-        (*boards[3 + col].i & rookRays) ||
-        (*boards[4 + col].i & (rookRays | bishopRays))){
-        // bishop, rook, queen
-        return true; 
-    } 
-    return false;
-}
-*/
 
 bool Board::isKingInCheck(Color c){
     // this king can only be in check if the last move put it in check
@@ -786,32 +697,6 @@ bool Board::isKingInCheck(Color c){
     //      get last other color move, and generate next move if it was a pawn, knight, or king
     //      if that last move was two moves down, just need to make sure it wasn't captured
 
-    if(moves.size() < 2) return false;
-
-    Move otherColMove;
-    if(c == moves.top().color){
-        // we just moved
-        // get second to last move
-        //      but also need to check to make sure it wasnt captured
-        //
-        //      top.to == secondTop.to means that it was captured
-        Move temp = moves.top();
-        U64 topTo = temp.to;
-        moves.pop();
-        otherColMove = moves.top(); // second to top
-        moves.push(temp);
-
-        if(otherColMove.to == topTo){
-            // it was captured
-            return false;
-            // TODO idk if i can actually do this but I think I can because
-            //      a double check means checkmate?
-        }
-        // otherwise not captured and might still be checking
-    }else{
-        otherColMove = moves.top();
-    }
-
     // get the board the king is in
     int loc = 0;
     if(c == boards[11].col) loc = 11;
@@ -833,32 +718,47 @@ bool Board::isKingInCheck(Color c){
         // if returned from here, something was checking and we found it
     }
 
-    // now handle the case of pawn, knight, or king
     U64 mask = 0;
-    switch (otherColMove.piece) {
-        case 'p':
-            mask = getPawnMove(otherColMove.to, otherColMove.color);
-            break;
-        case 'n':
-            mask = getKnightMove(otherColMove.to, otherColMove.color);
-            break;
-        case 'k':
-            // generate king moves without checking (Hopefully is fine)
-            mask |= ((otherColMove.to << 1) & ~aFile) | ((otherColMove.to >> 1) & ~hFile); // side to side
-            mask |= (otherColMove.to << 8) | (otherColMove.to >> 8); // up and down
-            mask |= ((otherColMove.to << 7) & ~hFile) | ((otherColMove.to << 9) & ~aFile); // diags
-            mask |= ((otherColMove.to >> 7) & ~aFile) | ((otherColMove.to >> 9) & ~hFile); // lower diags
-            break;
-        
-        // if we have anything else it is because we passed earlier checks
+    // because we are checking if the king walked into check
+    // so we need to check against all pawns, knights, and the other king
+    int otherLoc = (loc + 6) % 12;
+    U64 pieceSq = 0;
+    Color notC = (c == WHITE ? BLACK : WHITE);
+    // need to go through all of the pawns, knights, and the king
+
+    // king
+    U64 pieces = *boards[otherLoc].i;
+    mask |= ((pieces << 1) & ~aFile) | ((pieces >> 1) & ~hFile); // side to side
+    mask |= (pieces << 8) | (pieces >> 8); // up and down
+    mask |= ((pieces << 7) & ~hFile) | ((pieces << 9) & ~aFile); // diags
+    mask |= ((pieces >> 7) & ~aFile) | ((pieces >> 9) & ~hFile); // lower diags
+
+    // pawns
+    pieces = *boards[otherLoc - 5].i;
+    while(pieces != 0){
+        pieceSq = (pieces & -pieces);
+        pieces ^= pieceSq;
+        if(notC == WHITE) mask |= ((pieceSq << 7) & ~hFile) | ((pieceSq << 9) & ~aFile);
+        else mask |= ((pieceSq >> 7) & ~hFile) | ((pieceSq >> 9) & ~aFile);
     }
-    if(mask & *boards[loc].i){
-        // have intersection with the given mask
-        return true;
+    
+    // knights
+    pieces = *boards[otherLoc - 4].i;
+    while(pieces != 0){
+        pieceSq = (pieces & -pieces);
+        pieces ^= pieceSq;
+        mask |= ((pieceSq << 17) & ~aFile);
+        mask |= ((pieceSq << 10) & ~abFile);
+        mask |= ((pieceSq >> 6) & ~abFile);
+        mask |= ((pieceSq >> 15) & ~aFile);
+
+        mask |= ((pieceSq >> 17) & ~hFile);
+        mask |= ((pieceSq >> 10) & ~ghFile);
+        mask |= ((pieceSq << 6) & ~ghFile);
+        mask |= ((pieceSq << 15) & ~hFile);
     }
 
-    // if we get here all checks passed
-    return false;
+    return mask & *boards[loc].i; // true if intersection, false otherwise
     
 }
 int Board::isGameOver(){
@@ -1047,4 +947,13 @@ U64 Board::Perft(int depth){
     }
     
     return moves;
+}
+void Board::printBoardState(){
+    for(int i = 0; i < 12; i++){
+        cout << *boards[i].i << " : " << boards[i].piece << " " << boards[i].col << endl;
+    }
+    cout << whiteCastleQueen << whiteCastleKing << blackCastleQueen << blackCastleKing << endl;
+    cout << halfMoves << " " << fullMoves << endl;
+    cout << "Moves: " << moves.size() << endl;
+    cout << "Cap: " << captures.size() << endl;
 }
