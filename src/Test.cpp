@@ -155,7 +155,7 @@ bool printTestResult(testBoard in, testBoard out, int num){
         cout << "\tD6:\t" << in.d6 << " : " << out.d6 << "\n";
     }
     if(succeed){
-        cout << "\033[1;32mPassed\033[0m\n";
+        cout << "\033[1;32mPassed\033[0m\t\t" << in.fen << "\n";
     }else{
         cout << "\033[1;31mFailed\033[0m\t\t" << in.fen << "\n";
     }

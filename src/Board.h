@@ -93,6 +93,9 @@ class Board{
         U64 blackQueens = 0;
         U64 blackKing = 0;
 
+        U64 blackPieces = 0;
+        U64 whitePieces = 0;
+
         U64 colorMask = 0;
         U64 debugMask = 0;
 

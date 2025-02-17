@@ -135,10 +135,10 @@ void Board::reset(std::string fen){
 
     enpassantLoc = 0;
 
-    whiteCastleKing = 1;
-    whiteCastleQueen = 1;
-    blackCastleKing = 1;
-    blackCastleQueen = 1;
+    whiteCastleKing = 0;
+    whiteCastleQueen = 0;
+    blackCastleKing = 0;
+    blackCastleQueen = 0;
 
     halfMoves = 0;
     fullMoves = 0;
@@ -168,6 +168,9 @@ Board::Board(Board &ref){
     this->blackQueens = ref.blackQueens;
     this->blackKing = ref.blackKing;
 
+    this->blackPieces = ref.blackPieces;
+    this->whitePieces = ref.whitePieces;
+
     this->enpassantLoc = ref.enpassantLoc;
 
     this->whiteCastleKing = ref.whiteCastleKing;
@@ -189,6 +192,13 @@ void Board::printLoc(U64 x){
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     // if top, generates pseudo legal moves
     // otherwise it generates all legal moves
+    whitePieces = 0;
+    blackPieces = 0;
+    for(int i = 0; i < 6; i++){
+        whitePieces |= *boards[i].i;
+        blackPieces |= *boards[i + 6].i;
+    }
+    
     U64 mask = 0;
     switch(piece){
         case 'n':
@@ -539,12 +549,12 @@ U64 Board::getKingMove(U64 loc, Color color){
     mask |= ((loc << 7) & ~hFile) | ((loc << 9) & ~aFile); // diags
     mask |= ((loc >> 7) & ~aFile) | ((loc >> 9) & ~hFile); // lower diags
 
-    U64 pieces = 0;
-    for(int i = 0 ; i < 12; i++){
-        if(color == boards[i].col) 
-            mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
-        pieces |= *boards[i].i;
-    }
+    U64 pieces = whitePieces | blackPieces;
+
+    // makes sure not touching own pieces
+    if(color == WHITE) mask &= ~whitePieces;
+    else mask &= ~blackPieces;
+
     // pieces has what we want for castling
     if(isKingInCheck(color)) return mask;
     if(color == WHITE && (whiteCastleKing || whiteCastleQueen)){
@@ -568,6 +578,7 @@ U64 Board::getKingMove(U64 loc, Color color){
     return mask;
 }
 U64 Board::getPawnMove(U64 loc, Color color){
+    // TODO Handle promotions
     U64 mask = 0;
 
     if(color == WHITE){
@@ -583,9 +594,11 @@ U64 Board::getPawnMove(U64 loc, Color color){
     else attack = ((loc >> 7) & ~hFile) | ((loc >> 9) & ~aFile);
 
     U64 opponentPieces = 0;
+    if(color == WHITE) opponentPieces = blackPieces;
+    else opponentPieces = whitePieces;
+    // TODO Generate special where just mask out the forward pieces
     for(int i = 0 ; i < 12; i++){
         mask ^= (mask & *boards[i].i); // cant capture forwards
-        if(boards[i].col != color) opponentPieces |= *boards[i].i;
     }
     // check empassantLoc
     if(color == WHITE && enpassantLoc >= 0x0000000100000000) opponentPieces |= enpassantLoc;
@@ -617,9 +630,10 @@ U64 Board::getKnightMove(U64 loc, Color color){
     mask = mask | ((loc >> 10) & ~ghFile);
     mask = mask | ((loc << 6) & ~ghFile);
     mask = mask | ((loc << 15) & ~hFile);
-    for(int i = (color ? 0 : 6) ; i < (color ? 6 : 12); i++){
-        mask ^= (mask & *boards[i].i); // makes sure this isnt the own colors pieces
-    }
+
+    // makes sure not touching own pieces
+    if(color == WHITE) mask &= ~whitePieces;
+    else mask &= ~blackPieces;
     return mask;
 }
 U64 Board::getActualRay(U64 loc, U64 ray, Color color){
@@ -629,43 +643,47 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
 
     int locMin = -1;
     int locMax = -1;
-    U64 pieces = 0; // holds all pieces
+    U64 pieces = whitePieces | blackPieces; // holds all pieces
     U64 colPieces = 0;
-    for(int i = 0; i < 12; i++){
-        pieces |= *boards[i].i;
-        if(color == boards[i].col) colPieces |= *boards[i].i;
-    }
+    if(color == WHITE) colPieces = whitePieces;
+    else colPieces = blackPieces;
+
     pieces ^= loc; // holds all pieces except loc
     pieces &= ray; // holds all pieces intersecting the ray
 
 
+    int intLoc = getLSLoc(loc);
     U64 pieceSq; // compared to loc
     U64 min = 0;
     U64 max = 0;
-    while(pieces != 0){
-        pieceSq = (pieces & -pieces); // isolate LSB
-        pieces ^= pieceSq; // remove it
-        
-        if(pieceSq < loc) min = pieceSq;
-        else if(max == 0){
-            max = pieceSq;
-            break;
-        }
+    U64 mask = ((U64)1 << intLoc) - 1;
+    U64 posMask = pieces & ~(mask); // all bits after loc
+    U64 negMask = pieces & mask; // bits below loc
+
+    max = posMask & -posMask; // gets the LSB above the loc
+
+    while(negMask != 0){
+        pieceSq = (negMask & -negMask); // isolate LSB
+        negMask ^= pieceSq; // remove it
+        min = pieceSq;
     }
-    if(min != 0) locMin = getLSLoc(min);
-    if(max != 0) locMax = getLSLoc(max);
 
 
     // locMin is most significant less than sq
     // locMax is least significant greater than sq
-    U64 mask = 0xFFFFFFFFFFFFFFFF;
-    if(locMax != -1) ray = ray & (mask >> (63 - locMax));
-    // shifts to the right so everything more significant than locMax is a 0
-    if(locMin != -1) ray = ray & (mask << locMin); // same deal
+    mask = 0xFFFFFFFFFFFFFFFF;
 
-    ray = ray & ~(ray & colPieces); // shouldnt be able to capture own pieces
+    if(min != 0){
+        locMin = getLSLoc(min);
+        // shifts to the right so everything more significant than locMax is a 0
+        ray = ray & (mask << locMin);
+    }
+    if(max != 0){
+        locMax = getLSLoc(max);
+        ray = ray & (mask >> (63 - locMax)); // same deal as above
+    }
 
-    return ray;
+    return ray & ~(ray & colPieces); // doesn't capture own pieces
 }
 
 bool Board::isKingInCheck(Color c){
@@ -675,8 +693,16 @@ bool Board::isKingInCheck(Color c){
     else loc = 5;
 
     U64 kingLoc = *boards[loc].i;
+    if(kingLoc == 0) cout << "No king somehow" << endl;
 
     // generate queen moves from the king
+    // TODO Might generate some bugs by not updating pieces
+    whitePieces = 0;
+    blackPieces = 0;
+    for(int i = 0; i < 6; i++){
+        whitePieces |= *boards[i].i;
+        blackPieces |= *boards[i + 6].i;
+    }
     U64 rookRays = getRookMove(kingLoc, boards[loc].col);
     U64 bishopRays = getBishopMove(kingLoc, boards[loc].col);
     // have rays, they are intersected with opponent pieces if can reach
@@ -750,34 +776,33 @@ int Board::isGameOver(){
     if(*boards[5].i == 0) return 2;
     if(*boards[11].i == 0) return 1;
 
-    U64 pieces = 0; // doesn't include kings
-    for(int i = 0; i < 5; i++){
-        pieces |= (*boards[i].i | *boards[i + 6].i);
-    }
+    U64 pieces = blackPieces | whitePieces; // doesn't include kings
+    pieces ^= *boards[5].i;
+    pieces ^= *boards[11].i; // removes both kings
 
     // insufficint material
     if(pieces == 0) return 4; // just kings
     // kings + 1 bishop
     // isolates the LSB and gets rid of it to check for only 1 piece
     if((pieces == *boards[2].i && 
-            (*boards[2].i ^ (*boards[2].i - *boards[2].i)) == 0) || 
+            (*boards[2].i ^ (*boards[2].i & -*boards[2].i)) == 0) || 
         (pieces == *boards[8].i && 
-            (*boards[8].i ^ (*boards[8].i - *boards[8].i)) == 0)) return 4; 
+            (*boards[8].i ^ (*boards[8].i & -*boards[8].i)) == 0)) return 4; 
 
     // kings + 1 knight
     // kings + 2 knights of same color
     if(pieces == *boards[1].i){
         U64 temp = *boards[1].i;
-        temp = temp ^ (temp - temp);
+        temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
-        temp = temp ^ (temp - temp);
+        temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
     }
     if(pieces == *boards[7].i){
         U64 temp = *boards[7].i;
-        temp = temp ^ (temp - temp);
+        temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
-        temp = temp ^ (temp - temp);
+        temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
     }
 
@@ -913,22 +938,14 @@ std::vector<Move> Board::getAllMoves(){
 }
 U64 Board::Perft(int depth){
     if(depth == 0) return 1;
-    // TODO This function is over counting moves
-    // its because im spawning rooks somewhere that I cant find
 
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
-        if(depth == 4){
-            cout << getMove(possMoves[i]) << " ";
-        }else if(depth == 5){
-            cout << getMove(possMoves[i]) << ": ";
-        }
         movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
         if(!isGameOver() && turn != NONE) moves += Perft(depth - 1);
         unMovePiece();
     }
-    if(depth == 4) cout << endl << endl;
     
     return moves;
 }
