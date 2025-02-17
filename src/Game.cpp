@@ -38,12 +38,12 @@ void Game::Init(string fen, int num){
             cout << i << " : " << perft << endl;
         }
         turn = NONE;
-        cout << "Generate moves : " << bitboard.generateMovesCalls << endl;
-        cout << "Get all moves : " << bitboard.getAllMovesCalls << endl;
-        cout << "Move Piece : " << bitboard.movePieceCalls << endl;
-        cout << "Unmove Piece : " << bitboard.unmovePieceCalls << endl;
-        cout << "Is king in check calls : " << bitboard.isKingInCheckCalls << endl;
-        cout << "get board calls : " << bitboard.getBoardCalls << endl;
+        //cout << "Generate moves : " << bitboard.generateMovesCalls << endl;
+        //cout << "Get all moves : " << bitboard.getAllMovesCalls << endl;
+        //cout << "Move Piece : " << bitboard.movePieceCalls << endl;
+        //cout << "Unmove Piece : " << bitboard.unmovePieceCalls << endl;
+        //cout << "Is king in check calls : " << bitboard.isKingInCheckCalls << endl;
+        //cout << "get board calls : " << bitboard.getBoardCalls << endl;
     }
 }
 void Game::Clear(){
@@ -156,6 +156,7 @@ bool Game::Update(double x, double y){
         }
         if(*selectedPiece.i == 0) bitboard.colorMask = loc;
     }
+    if(bitboard.isGameOver() != 0) return false;
     if(*bitboard.boards[5].i == 0){
         cout << "Black wins" << endl;
         return false;

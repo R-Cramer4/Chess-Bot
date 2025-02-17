@@ -45,6 +45,13 @@ struct Move{
     // q = taken away black queenside castle
     // W = taken away both white castles
     // B = taken away both black castles
+
+    bool operator==(Move &lhs){
+        return  lhs.from == this->from && 
+                lhs.to == this->to && 
+                lhs.color == this->color && 
+                lhs.piece == this->piece;
+    }
 };
 
 const U64 aFile =         0x0101010101010101;
@@ -60,6 +67,14 @@ const U64 darkSquares =   0xAA55AA55AA55AA55;
 
 class Board{
     public:
+        int gameOver = 0; // 0 means still playing
+        // 1 = white wins by checkmate
+        // 2 = black wins by checkmate
+        // 3 = stalemate
+        // 4 = insufficient material
+        // 5 = 50 move rule
+        // 6 = stalemate by repitition
+
         // using a binary representation where the least significant bit is A1
         // the most significant bit is H8
         // so the first 8 bits are A1 - A8
@@ -119,6 +134,7 @@ class Board{
         std::vector<Move> getAllMoves();
         void movePiece(U64 from, Color color, char piece, U64 newSpot);
         void unMovePiece();
+        int isGameOver();
         Board(){}
         Board(Board &ref);
         U64 Perft(int depth);

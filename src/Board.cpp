@@ -303,14 +303,18 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
 
     // king
     if(piece == 'k'){
-        if(color == WHITE){
+        if(color == WHITE && (this->whiteCastleQueen || this->whiteCastleKing)){
+            if(this->whiteCastleKing && this->whiteCastleKing) castlingRights = 'W';
+            else if(this->whiteCastleKing) castlingRights = 'K';
+            else castlingRights = 'Q';
             this->whiteCastleQueen = 0;
             this->whiteCastleKing = 0;
-            castlingRights = 'W';
-        }else{
+        }else if(color == BLACK && (this->blackCastleKing || this->blackCastleQueen)){
+            if(this->blackCastleKing && this->blackCastleKing) castlingRights = 'B';
+            else if(this->blackCastleKing) castlingRights = 'k';
+            else castlingRights = 'q';
             this->blackCastleQueen = 0;
             this->blackCastleKing = 0;
-            castlingRights = 'B';
         }
         if(newSpot == from << 2){
             // kingside
@@ -857,6 +861,95 @@ bool Board::isKingInCheck(Color c){
     return false;
     
 }
+int Board::isGameOver(){
+    int state = 0; // 0 means still playing
+    // 1 = white wins by checkmate
+    // 2 = black wins by checkmate
+    // 3 = stalemate
+    // 4 = insufficient material
+    // 5 = 50 move rule
+    // 6 = stalemate by repitition
+
+    // no kings left
+    if(*boards[5].i == 0) return 2;
+    if(*boards[11].i == 0) return 1;
+
+    U64 pieces = 0; // doesn't include kings
+    for(int i = 0; i < 5; i++){
+        pieces |= (*boards[i].i | *boards[i + 6].i);
+    }
+
+    // insufficint material
+    if(pieces == 0) return 4; // just kings
+    // kings + 1 bishop
+    // isolates the LSB and gets rid of it to check for only 1 piece
+    if((pieces == *boards[2].i && 
+            (*boards[2].i ^ (*boards[2].i - *boards[2].i)) == 0) || 
+        (pieces == *boards[8].i && 
+            (*boards[8].i ^ (*boards[8].i - *boards[8].i)) == 0)) return 4; 
+
+    // kings + 1 knight
+    // kings + 2 knights of same color
+    if(pieces == *boards[1].i){
+        U64 temp = *boards[1].i;
+        temp = temp ^ (temp - temp);
+        if(temp == 0) return 4;
+        temp = temp ^ (temp - temp);
+        if(temp == 0) return 4;
+    }
+    if(pieces == *boards[7].i){
+        U64 temp = *boards[7].i;
+        temp = temp ^ (temp - temp);
+        if(temp == 0) return 4;
+        temp = temp ^ (temp - temp);
+        if(temp == 0) return 4;
+    }
+
+    // kings with each having its own minor piece (as long as not same color bishop)
+
+    // 50 move rule
+    if(fullMoves == 50) return 5;
+    
+    // draw by repitition
+    if(moves.empty()) return state;
+    Move top = moves.top();
+    moves.pop();
+    if(moves.empty()){
+        moves.push(top);
+        return state;
+    }
+    Move second = moves.top();
+    moves.pop();
+    if(moves.empty()){
+        moves.push(second);
+        moves.push(top);
+        return state;
+    }
+    if(top == moves.top()){
+        // second move in a row
+        moves.pop();
+        if(moves.empty()){
+            moves.push(top);
+            moves.push(second);
+            moves.push(top);
+            return state;
+        }
+        if(second == moves.top()){
+            moves.pop();
+            if(top == moves.top()){
+                // third move
+                return 6;
+            }
+            moves.push(second);
+        }
+        moves.push(top);
+    }
+    moves.push(second);
+    moves.push(top);
+
+
+    return state;
+}
 
 int Board::getBoard(char piece, Color color){
     int board = 0;
@@ -949,7 +1042,7 @@ U64 Board::Perft(int depth){
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
         movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
-        if(turn != NONE) moves += Perft(depth - 1);
+        if(!isGameOver() && turn != NONE) moves += Perft(depth - 1);
         unMovePiece();
     }
     
