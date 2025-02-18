@@ -25,7 +25,6 @@ class Game{
         U64 lastClicked = 0;
         quad selectedPiece = {&lastClicked, NONE, "", '0'};
 
-        U64 isPawnPromo = 0;
         void pawnPromo(double x, double y);
 
         Color checkmate = NONE;

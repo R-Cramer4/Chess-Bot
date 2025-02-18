@@ -282,6 +282,10 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     }
 
     int board = getBoard(piece, color); // get board piece is on
+    // move piece
+    *boards[board].i ^= from;
+    *boards[board].i |= newSpot;
+    moves.push({from, newSpot, special, piece, color, castlingRights});
 
     // deal with enpassant here, adding and removing squares
     if(piece == 'p'){
@@ -304,6 +308,17 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
         if((from << 16) == newSpot) enpassantLoc = from << 8;
         else if((from >> 16) == newSpot) enpassantLoc = from >> 8;
         else enpassantLoc = 0;
+        // pawn promotion
+        if(color == WHITE){
+            if(newSpot & 0xff00000000000000){
+                // was a promotion
+                pawnPromo = newSpot;
+            }
+        }else if(color == BLACK){
+            if(newSpot & (U64)0xff){
+                pawnPromo = newSpot;
+            }
+        }
     }else{
         enpassantLoc = 0;
     }
@@ -373,10 +388,6 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
         }
     }
 
-    // move piece
-    *boards[board].i ^= from;
-    *boards[board].i |= newSpot;
-    moves.push({from, newSpot, special, piece, color, castlingRights});
 
     halfMoves++;
     if(turn == WHITE) turn = BLACK;
@@ -388,6 +399,36 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     if(*boards[5].i == 0 || *boards[11].i == 0){
         turn = NONE;
     }
+}
+void Board::promotePawn(U64 loc, Color color, char to){
+    // loc is the pawn to promote
+    int board = 0;
+    if(color == BLACK) board = 6;
+    *boards[board].i ^= loc; // removes the pawn
+    int cap = 0;
+
+    auto move = moves.top();
+    if(move.special & 4) int cap = 4;
+    moves.pop();
+    switch (to) {
+        case 'n':
+            *boards[board + 1].i ^= loc; // adds the piece
+            move.special = 8 + cap;
+            break;
+        case 'b':
+            *boards[board + 2].i ^= loc;
+            move.special = 9 + cap;
+            break;
+        case 'r':
+            *boards[board + 3].i ^= loc;
+            move.special = 10 + cap;
+            break;
+        case 'q':
+            *boards[board + 4].i ^= loc;
+            move.special = 11 + cap;
+            break;
+    }
+    moves.push(move); // updates the move
 }
 void Board::unMovePiece(){
     if(moves.size() == 0) return;
@@ -406,41 +447,37 @@ void Board::unMovePiece(){
     *boards[board].i ^= move.to; // delete old piece
     *boards[board].i |= move.from; // put in old place
 
-    if(move.special & 4){
+    if(move.special & 4 && move.special < 12){
         // is some sort of capture
         auto piece = captures.top();
         captures.pop();
         // get last captured piece
-        board = getBoard(piece.first, piece.second);
+        int capBoard = getBoard(piece.first, piece.second);
         // for normal captures
-        if(move.special != 5) *boards[board].i |= move.to;
+        if(move.special != 5) *boards[capBoard].i |= move.to;
         else{
             // enpassant capture
             enpassantLoc = move.to; // this is where the pawn went
-            if(piece.second == BLACK) *boards[board].i |= (move.to >> 8);
-            else *boards[board].i |= (move.to << 8);
+            if(piece.second == BLACK) *boards[capBoard].i |= (move.to >> 8);
+            else *boards[capBoard].i |= (move.to << 8);
         }
     }else if(move.special == 2){
         // kingside castle
         if(move.color == WHITE){
             *boards[3].i ^= (U64)0x20;
             *boards[3].i |= (U64)0x80;
-            whiteCastleKing = true;
         }else{
             *boards[9].i ^= 0x2000000000000000;
             *boards[9].i |= 0x8000000000000000;
-            blackCastleKing = true;
         }
     }else if(move.special == 3){
         // queenside castle
         if(move.color == WHITE){
             *boards[3].i ^= (U64)0x8;
             *boards[3].i |= (U64)0x1;
-            whiteCastleQueen = true;
         }else{
             *boards[9].i ^= 0x0800000000000000;
             *boards[9].i |= 0x0100000000000000;
-            blackCastleQueen = true;
         }
     }else if(move.special >= 8){
         // promo
@@ -449,9 +486,9 @@ void Board::unMovePiece(){
             auto piece = captures.top();
             captures.pop();
             // get last captured piece
-            board = getBoard(piece.first, piece.second);
+            int capBoard = getBoard(piece.first, piece.second);
             // for normal captures
-            *boards[board].i |= move.to; // change captured piece
+            *boards[capBoard].i |= move.to; // change captured piece
         }
 
         *boards[board].i ^= move.to; // un delete old piece(wasnt there)
@@ -693,16 +730,8 @@ bool Board::isKingInCheck(Color c){
     else loc = 5;
 
     U64 kingLoc = *boards[loc].i;
-    if(kingLoc == 0) cout << "No king somehow" << endl;
 
     // generate queen moves from the king
-    // TODO Might generate some bugs by not updating pieces
-    whitePieces = 0;
-    blackPieces = 0;
-    for(int i = 0; i < 6; i++){
-        whitePieces |= *boards[i].i;
-        blackPieces |= *boards[i + 6].i;
-    }
     U64 rookRays = getRookMove(kingLoc, boards[loc].col);
     U64 bishopRays = getBishopMove(kingLoc, boards[loc].col);
     // have rays, they are intersected with opponent pieces if can reach

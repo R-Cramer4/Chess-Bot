@@ -84,14 +84,14 @@ void Game::Render(){
         }
     }
 
-    if(isPawnPromo){
+    if(bitboard.pawnPromo){
         renderer->DrawSprite(Resources::GetTexture("pawnPromo"), 
                             glm::vec2(boardW / 2, boardH / 2), glm::vec2(200.0f, 200.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
     }
 }
 bool Game::Update(double x, double y){
-    if(isPawnPromo){
+    if(bitboard.pawnPromo){
         pawnPromo(x, y);
         return true;
     }
@@ -116,23 +116,6 @@ bool Game::Update(double x, double y){
             // we didnt click on the same piece twice
             
             bitboard.movePiece(*selectedPiece.i, selectedPiece.col, selectedPiece.piece, loc); // move piece
-
-
-            Move lastMove = bitboard.moves.top(); 
-            // has to have something because we just called move
-            if(lastMove.piece == 'p'){
-                if(lastMove.color == WHITE){
-                    if(loc & 0xff00000000000000){
-                        // was a promotion
-                        isPawnPromo = loc;
-                    }
-                }else if(lastMove.color == BLACK){
-                    if(loc & (U64)0xff){
-                        isPawnPromo = loc;
-                    }
-                }
-            }
-
             *selectedPiece.i = 0;
         }
         bitboard.colorMask = 0;
@@ -184,32 +167,17 @@ void Game::pawnPromo(double x, double y){
     
     // not clamped to exactly on the img, so if you click off it it still gives you a pos in the quadrant you want
 
-    // the piece we want is in isPawnPromo, the color is ~Turn
+    Color c = WHITE;
+    if(turn == WHITE) c = BLACK;
 
-    int board = 0;
-    if(bitboard.turn == WHITE) board = 6;
+    char piece;
+    if(locx == 0 && locy == 0) piece = 'b';
+    else if(locx == 0 && locy == 1) piece = 'q';
+    else if(locy == 0) piece = 'n';
+    else piece = 'r';
 
-    // knight += 1
-    // bishop += 2
-    // rook += 3
-    // queen += 4
-    int add = 0;
-    if(locx == 0 && locy == 0) add = 2;
-    else if(locx == 0 && locy == 1) add = 4;
-    else if(locy == 0) add = 1;
-    else add = 3;
+    // TODO Fix
+    bitboard.promotePawn(bitboard.pawnPromo, c, piece);
+    bitboard.pawnPromo = 0;
 
-    *bitboard.boards[board].i ^= isPawnPromo; // get rid of the pawn
-    *bitboard.boards[board + add].i |= isPawnPromo; // add piece
-
-    // add to last move
-    auto move = bitboard.moves.top();
-    bitboard.moves.pop();
-
-    // if captured a piece, ranges from 12 - 15
-    // otherwise ranges from 8-11
-    move.special += 7 + add;
-    bitboard.moves.push(move);
-    
-    isPawnPromo = 0;
 }

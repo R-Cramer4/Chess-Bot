@@ -33,6 +33,7 @@ struct Move{
     // 2 = king castle
     // 3 = queen castle
     // 4 = captures
+    // 5 = enpassant capture
     // 8 = knight promo
     // 9 = bishop promo
     // 10 = rook promo
@@ -100,6 +101,7 @@ class Board{
         U64 debugMask = 0;
 
         U64 enpassantLoc = 0;
+        U64 pawnPromo = 0; // becomes the loc if a pawn is waiting on promotion
 
         bool whiteCastleKing = 0;
         bool whiteCastleQueen = 0;
@@ -137,6 +139,7 @@ class Board{
         U64 generateMoves(U64 loc, char type, Color color, bool top);
         std::vector<Move> getAllMoves();
         void movePiece(U64 from, Color color, char piece, U64 newSpot);
+        void promotePawn(U64 loc, Color color, char to);
         void unMovePiece();
         int isGameOver();
         Board(){}
