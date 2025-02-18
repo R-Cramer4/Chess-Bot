@@ -290,6 +290,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     // deal with enpassant here, adding and removing squares
     if(piece == 'p'){
         // need to check for capture by enpassant first
+        // TODO Enpassant doesnt work
         if(color == WHITE && enpassantLoc >= 0x0000000100000000 &&
             (newSpot & enpassantLoc)){
             *boards[board + 6].i ^= (newSpot >> 8);
@@ -322,10 +323,6 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     }else{
         enpassantLoc = 0;
     }
-
-
-    // handle castling rights
-
     // king
     if(piece == 'k'){
         if(color == WHITE && (this->whiteCastleQueen || this->whiteCastleKing)){
@@ -674,7 +671,6 @@ U64 Board::getKnightMove(U64 loc, Color color){
     return mask;
 }
 U64 Board::getActualRay(U64 loc, U64 ray, Color color){
-    // TODO make more efficient
     // get the most significant 1 that is intersecting the ray while being less significant than loc
     // get the least significant 1 that is intersecting the ray while being more significant than loc
 
@@ -781,12 +777,9 @@ bool Board::isKingInCheck(Color c){
 
     // pawns
     pieces = *boards[otherLoc - 5].i;
-    while(pieces != 0){
-        pieceSq = (pieces & -pieces);
-        pieces ^= pieceSq;
-        if(notC == WHITE) mask |= ((pieceSq << 7) & ~hFile) | ((pieceSq << 9) & ~aFile);
-        else mask |= ((pieceSq >> 7) & ~hFile) | ((pieceSq >> 9) & ~aFile);
-    }
+    // can just bit shift the entire mask at once
+    if(notC == WHITE) mask |= ((pieces << 7) & ~hFile) | ((pieces << 9) & ~aFile);
+    else mask |= ((pieces >> 7) & ~hFile) | ((pieces >> 9) & ~aFile);
     
 
     return mask & kingLoc; // true if intersection, false otherwise
