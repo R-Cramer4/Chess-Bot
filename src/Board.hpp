@@ -1,13 +1,10 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include <cstdint>
 #include <stack>
 #include <string>
-#include <vector>
+#include "Masks.hpp"
 
-typedef uint64_t U64;
-enum Color {BLACK, WHITE, NONE};
 
 class quad{
     public:
@@ -56,17 +53,6 @@ struct Move{
     }
 };
 
-const U64 aFile =         0x0101010101010101;
-const U64 abFile =        0x0303030303030303;
-const U64 hFile =         0x8080808080808080;
-const U64 ghFile =        0xC0C0C0C0C0C0C0C0;
-const U64 rank1 =         0x00000000000000FF;
-const U64 rank8 =         0xFF00000000000000;
-const U64 a1h8Diag =      0x8040201008040201;
-const U64 h1a8AntiDiag =  0x0102040810204080;
-const U64 lightSquares =  0x55AA55AA55AA55AA;
-const U64 darkSquares =   0xAA55AA55AA55AA55;
-
 class Board{
     public:
         int gameOver = 0; // 0 means still playing
@@ -98,7 +84,7 @@ class Board{
         U64 whitePieces = 0;
 
         U64 colorMask = 0;
-        U64 debugMask = 0;
+        U64 debugMask = kingMask;
 
         U64 enpassantLoc = 0;
         U64 pawnPromo = 0; // becomes the loc if a pawn is waiting on promotion
@@ -130,23 +116,26 @@ class Board{
             {&blackKing, BLACK, "king", 'k'}
         };
         
+        Board(){}
+        Board(Board &ref);
 
         Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
         void reset(std::string fen); // resets everything with new fen
-        int getLSLoc(U64 mask);
         void printLoc(U64 x);
+
+        int isGameOver();
+        void printBoardState();
+        std::string getMove(Move m);
 
         U64 generateMoves(U64 loc, char type, Color color, bool top);
         std::vector<Move> getAllMoves();
+        U64 Perft(int depth);
+
         void movePiece(U64 from, Color color, char piece, U64 newSpot);
         void promotePawn(U64 loc, Color color, char to);
         void unMovePiece();
-        int isGameOver();
-        Board(){}
-        Board(Board &ref);
-        U64 Perft(int depth);
-        void printBoardState();
-        std::string getMove(Move m);
+
+        int getLSLoc(U64 mask);
 
     private:
         U64 getRookMove(U64 loc, Color color);
@@ -158,6 +147,7 @@ class Board{
 
         U64 getActualRay(U64 loc, U64 ray, Color color);
         bool isKingInCheck(Color c);
+
         int getBoard(char piece, Color color);
         std::string boardToLoc(U64 board);
 };

@@ -1,6 +1,6 @@
-#include "Piece.h"
-#include "Resources.h"
-#include "Game.h"
+#include "Piece.hpp"
+#include "Resources.hpp"
+#include "../Game.hpp"
 
 void Piece::Draw(SpriteRenderer *r){
     if(isClicked)

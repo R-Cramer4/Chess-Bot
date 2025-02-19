@@ -1,7 +1,7 @@
-#include "Game.h"
-#include "Resources.h"
-#include "SpriteRenderer.h"
-#include "Board.h"
+#include "Game.hpp"
+#include "graphics/Resources.hpp"
+#include "graphics/SpriteRenderer.hpp"
+#include "Board.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -10,7 +10,7 @@ SpriteRenderer *renderer;
 
 void Game::Init(string fen, int num){
     // load shaders
-    Resources::LoadShader("src/vertex.vert", "src/fragment.frag", nullptr, "sprite");
+    Resources::LoadShader("src/graphics/vertex.vert", "src/graphics/fragment.frag", nullptr, "sprite");
     // shader config
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(this->Width), static_cast<float>(this->Height), 0.0f, -1.0f, 1.0f);
     Resources::GetShader("sprite").Use().SetInteger("image", 0);

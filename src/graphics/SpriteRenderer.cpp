@@ -1,5 +1,5 @@
-#include "SpriteRenderer.h"
-#include "Texture.h"
+#include "SpriteRenderer.hpp"
+#include "Texture.hpp"
 #include "glm/ext/matrix_transform.hpp"
 
 SpriteRenderer::SpriteRenderer(const Shader &shader){

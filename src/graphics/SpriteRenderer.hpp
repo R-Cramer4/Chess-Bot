@@ -1,8 +1,8 @@
 #ifndef SPRITERENDERER_H
 #define SPRITERENDERER_H
 
-#include "Texture.h"
-#include "Shader.h"
+#include "Texture.hpp"
+#include "Shader.hpp"
 
 #include "glad/glad.h"
 #include "glm/glm.hpp"

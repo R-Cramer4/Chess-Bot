@@ -4,8 +4,8 @@
 #include <map>
 #include <string>
 #include "glad/glad.h"
-#include "Shader.h"
-#include "Texture.h"
+#include "Shader.hpp"
+#include "Texture.hpp"
 
 using namespace std;
 

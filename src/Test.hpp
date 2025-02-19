@@ -1,7 +1,7 @@
 #ifndef TEST_H
 #define TEST_H
 
-#include "Board.h"
+#include "Board.hpp"
 
 using namespace std;
 

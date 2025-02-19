@@ -1,6 +1,6 @@
 CompileFlags:
   Add: [-I/Library/Developer/CommandLineTools/usr/bin/include,
-    -I/Users/jake/Documents/Jake/computer-science/cpp/quantum_chess/include,
+    -I/Users/Robin/Documents/Robin/computer-science/cpp/quantum_chess/include,
     -I/home/robin/cs/Chess-Bot/include,
     -I/usr/local/include,
     -I/opt/homebrew/include,

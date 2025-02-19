@@ -1,7 +1,7 @@
 #ifndef PIECE_H
 #define PIECE_H
 
-#include "SpriteRenderer.h"
+#include "SpriteRenderer.hpp"
 #include "glad/glad.h"
 #include "glm/glm.hpp"
 #include <string>

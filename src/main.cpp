@@ -1,8 +1,8 @@
-#include "Test.h"
+#include "Test.hpp"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "Game.h"
+#include "Game.hpp"
 
 using namespace std;
 

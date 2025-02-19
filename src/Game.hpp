@@ -1,8 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "Board.h"
-#include "SpriteRenderer.h"
+#include "Board.hpp"
+#include "graphics/SpriteRenderer.hpp"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
