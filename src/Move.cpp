@@ -102,7 +102,6 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
     // move piece
     *boards[board].i ^= from;
     *boards[board].i |= newSpot;
-    moves.push({from, newSpot, special, piece, color, castlingRights});
 
     // deal with enpassant here, adding and removing squares
     if(piece == 'p'){
@@ -202,6 +201,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 newSpot){
         }
     }
 
+    moves.push({from, newSpot, special, piece, color, castlingRights});
 
     halfMoves++;
     if(turn == WHITE) turn = BLACK;
@@ -454,43 +454,41 @@ U64 Board::getKingMove(U64 loc, Color color){
 U64 Board::getPawnMove(U64 loc, Color color){
     // TODO Handle promotions
     U64 mask = 0;
+    U64 attack = 0;
+    U64 opponentPieces = 0;
+    U64 empty = ~(whitePieces | blackPieces);
 
     if(color == WHITE){
+        opponentPieces = blackPieces;
+
         mask |= (loc << 8); // normal moves
-        mask |= ((loc & 0x000000000000ff00) << 16);
+
+        mask &= empty;
+        mask |= (mask & rank3) << 8; // branchless, generates the move twice forward
+
         // branchless, if a pawn isnt in in the mask it results in a 0 being shifted
+        attack = ((loc << 7) & ~hFile) | ((loc << 9) & ~aFile);
+        
+        // enpassant, checks if on correct side of the board
+        opponentPieces |= (enpassantLoc & rank6);
     }else{
+        opponentPieces = whitePieces;
+
         mask |= (loc >> 8);
-        mask |= ((loc & 0x00ff000000000000) >> 16);
-    }
-    U64 attack = 0;
-    if(color == WHITE) attack = ((loc << 7) & ~hFile) | ((loc << 9) & ~aFile);
-    else attack = ((loc >> 7) & ~hFile) | ((loc >> 9) & ~aFile);
 
-    U64 opponentPieces = 0;
-    if(color == WHITE) opponentPieces = blackPieces;
-    else opponentPieces = whitePieces;
-    // TODO Generate special where just mask out the forward pieces
-    for(int i = 0 ; i < 12; i++){
-        mask ^= (mask & *boards[i].i); // cant capture forwards
-    }
-    // check empassantLoc
-    if(color == WHITE && enpassantLoc >= 0x0000000100000000) opponentPieces |= enpassantLoc;
-    else if(color == BLACK && enpassantLoc < 0x0000000100000000) opponentPieces |= enpassantLoc;
-    // the enpassant loc is on the correct side of the board
+        mask &= empty;
+        mask |= (mask & rank6) >> 8; // branchless
 
-    attack = attack & opponentPieces;
-    mask |= attack;
+        attack = ((loc >> 7) & ~hFile) | ((loc >> 9) & ~aFile);
 
-    // handling jump error
-    if(mask & (loc << 16)){
-        // if can move twice
-        if(!(mask & (loc << 8))) mask ^= (loc << 16); // cant move twice if cant move once
-    }else if(mask & (loc >> 16)){
-        // if can move twice
-        if(!(mask & (loc >> 8))) mask ^= (loc >> 16); // cant move twice if cant move once
+        // enpassant, checks if on correct side of the board
+        opponentPieces |= (enpassantLoc & rank3);
     }
-    return mask;
+    mask &= empty; // cant capture/move forwards if something is there
+
+    attack &= opponentPieces; // only can attack
+
+    return mask | attack;
 }
 U64 Board::getKnightMove(U64 loc, Color color){
     U64 mask = 0;

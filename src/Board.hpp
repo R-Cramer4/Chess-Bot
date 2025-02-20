@@ -3,6 +3,7 @@
 
 #include <stack>
 #include <string>
+#include <vector>
 #include "Masks.hpp"
 
 
@@ -138,6 +139,8 @@ class Board{
         int getLSLoc(U64 mask);
 
     private:
+        // TODO maybe return list of moves instead of a mask
+        // so dont do same calculation twice
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);
         U64 getQueenMove(U64 loc, Color color);
