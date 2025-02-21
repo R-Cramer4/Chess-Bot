@@ -347,7 +347,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
             enpassantLoc = 0; // not a pawn move
             // handle castling
             if(color == WHITE && (whiteCastleQueen || whiteCastleKing)){
-                if(whiteCastleKing && whiteCastleKing) castlingRights = 'W';
+                if(whiteCastleKing && whiteCastleQueen) castlingRights = 'W';
                 else if(whiteCastleKing) castlingRights = 'K';
                 else castlingRights = 'Q';
                 whiteCastleQueen = 0;
@@ -571,7 +571,7 @@ void Board::unMovePiece(){
             blackCastleQueen = 1;
             break;
         case 'W':
-whiteCastleQueen = 1;
+            whiteCastleQueen = 1;
             whiteCastleKing = 1;
             break;
         case 'B':
