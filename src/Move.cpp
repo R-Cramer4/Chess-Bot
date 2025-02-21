@@ -66,7 +66,7 @@ U64 Board::getRookMove(U64 loc, Color color){
     U64 mask = 0;
     int sq = getLSLoc(loc);
 
-    U64 hori = rank8 << (sq & 56);
+    U64 hori = rank1 << (sq & 56);
     U64 vert = aFile << (sq & 7);
 
     mask |= getActualRay(loc, hori, color);
