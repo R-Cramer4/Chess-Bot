@@ -123,6 +123,14 @@ Color Board::generateBitBoards(string fen){
     otherInfo.erase(otherInfo.begin(), otherInfo.begin() + otherInfo.find(' ') + 1);
     fullMoves = stoi(otherInfo.substr(0, otherInfo.find(' ')));
 
+    // sets up pieces
+    whitePieces = 0;
+    blackPieces = 0;
+    for(int i = 0; i < 6; i++){
+        whitePieces |= *boards[i].i;
+        blackPieces |= *boards[i + 6].i;
+    }
+
     return turn;
 }
 void Board::reset(std::string fen){

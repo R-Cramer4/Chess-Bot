@@ -22,6 +22,26 @@ const U64 h1a8AntiDiag =  0x0102040810204080;
 const U64 lightSquares =  0x55AA55AA55AA55AA;
 const U64 darkSquares =   0xAA55AA55AA55AA55;
 
+const U64 WQPieces =      0x000000000000000E;
+const U64 WKPieces =      0x0000000000000060;
+const U64 BQPieces =      0x0E00000000000000;
+const U64 BKPieces =      0x6000000000000000;
+
+const U64 FullBoard =     0xFFFFFFFFFFFFFFFF;
+
+// for LSLoc function
+// (Bitscan forward)
+const int index64[64] = {
+    0,  1, 48,  2, 57, 49, 28,  3,
+   61, 58, 50, 42, 38, 29, 17,  4,
+   62, 55, 59, 36, 53, 51, 43, 22,
+   45, 39, 33, 30, 24, 18, 12,  5,
+   63, 47, 56, 27, 60, 41, 37, 16,
+   54, 35, 52, 21, 44, 32, 23, 11,
+   46, 26, 40, 15, 34, 20, 31, 10,
+   25, 14, 19,  9, 13,  8,  7,  6
+};
+
 // Credit for the masks, among other helpful move gen functions
 // https://libres.uncg.edu/ir/asu/f/Columbia_Sophie_Spring%202023_thesis.pdf
 const U64 knightMask = 0xa1100110a;
