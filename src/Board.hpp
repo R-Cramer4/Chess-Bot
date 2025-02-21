@@ -137,6 +137,7 @@ class Board{
         void unMovePiece();
 
         int getLSLoc(U64 mask);
+        int isKingInCheck(Color c);
 
     private:
         // TODO maybe return list of moves instead of a mask
@@ -149,7 +150,6 @@ class Board{
         U64 getKnightMove(U64 loc, Color color);
 
         U64 getActualRay(U64 loc, U64 ray, Color color);
-        bool isKingInCheck(Color c);
 
         int getBoard(char piece, Color color);
         std::string boardToLoc(U64 board);

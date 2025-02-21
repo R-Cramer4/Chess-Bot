@@ -1,7 +1,6 @@
 #include "Board.hpp"
 #include "Masks.hpp"
 #include <cassert>
-#include <iostream>
 
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     U64 mask = 0;
@@ -225,7 +224,7 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     return ray & ~(ray & colPieces); // doesn't capture own pieces
 }
 
-bool Board::isKingInCheck(Color color){
+int Board::isKingInCheck(Color color){
 
     int board = (color == WHITE) ? 5 : 11;
     U64 loc = *boards[board].i;
@@ -234,12 +233,10 @@ bool Board::isKingInCheck(Color color){
     U64 bishopRays = getBishopMove(loc, color);
 
     int otherCol = (board == 5) ? 6 : 0;
-    if((rookRays & *boards[otherCol + 3].i) ||
-        (bishopRays & *boards[otherCol + 2].i) ||
-        ((bishopRays | rookRays) & *boards[otherCol + 4].i)){
+    if((rookRays & *boards[otherCol + 3].i)) return 3;
+    else if(bishopRays & *boards[otherCol + 2].i) return 2;
+    else if ((bishopRays | rookRays) & *boards[otherCol + 4].i) return 4;
         // intersecting with any of the opponent sliding pieces
-        return true;
-    }
 
     U64 knights = *boards[otherCol + 1].i;
     U64 knightFromKing = getKnightMove(loc, color);
@@ -256,7 +253,7 @@ bool Board::isKingInCheck(Color color){
     // masks out overflow bits
     sq = ((sq & 0x7) >> 2);
     kingMove &= (sq * (~abFile)) | (!sq * (~ghFile));
-    if(kingMove & *boards[otherCol + 5].i) return true;
+    if(kingMove & *boards[otherCol + 5].i) return 5;
     // king putting king in check
     
     U64 pawns = *boards[otherCol].i;
@@ -266,9 +263,10 @@ bool Board::isKingInCheck(Color color){
     }else{
         mask |= ((pawns >> 7) & ~hFile) | ((pawns >> 9) & ~aFile);
     }
-    return pawns & loc;
-    // TODO not handling check by enpassant i think
+    if(pawns & loc) return 6;
+    return 0;
     // intersection with pawns if true, otherwise not in check
+    // TODO not handling check by enpassant i think
 }
 
 void Board::movePiece(U64 from, Color color, char piece, U64 to){

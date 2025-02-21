@@ -106,6 +106,9 @@ bool Game::Update(double x, double y){
     // invert y
     locy = abs(locy - 7);
 
+    cout << "WHITE: " << bitboard.isKingInCheck(WHITE) << endl;
+    cout << "BLACK: " << bitboard.isKingInCheck(BLACK) << endl;
+
 
     // locx and locy hold the square that was clicked so now update the mask
     U64 loc = ((U64)1 << ((U64)(locy * 8) + (U64)locx));
