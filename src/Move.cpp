@@ -169,7 +169,7 @@ U64 Board::getPawnMove(U64 loc, Color color){
         mask &= empty;
         mask |= (mask & rank6) >> 8; // branchless
 
-        attack = ((loc >> 7) & ~hFile) | ((loc >> 9) & ~aFile);
+        attack = ((loc >> 7) & ~aFile) | ((loc >> 9) & ~hFile);
 
         // enpassant, checks if on correct side of the board
         opponentPieces |= (enpassantLoc & rank3);
@@ -263,7 +263,7 @@ int Board::isKingInCheck(Color color){
     if(otherCol == 0){
         mask |= ((pawns << 7) & ~hFile) | ((pawns << 9) & ~aFile);
     }else{
-        mask |= ((pawns >> 7) & ~hFile) | ((pawns >> 9) & ~aFile);
+        mask |= ((pawns >> 7) & ~aFile) | ((pawns >> 9) & ~hFile);
     }
     if(mask & loc) return 6;
     return 0;
