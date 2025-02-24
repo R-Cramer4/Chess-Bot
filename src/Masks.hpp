@@ -28,6 +28,8 @@ const U64 BQPieces =      0x0E00000000000000;
 const U64 BKPieces =      0x6000000000000000;
 
 const U64 FullBoard =     0xFFFFFFFFFFFFFFFF;
+const U64 whiteSide =     0x00000000FFFFFFFF;
+const U64 blackSide =     0xFFFFFFFF00000000;
 
 // for LSLoc function
 // (Bitscan forward)

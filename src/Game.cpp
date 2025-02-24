@@ -108,8 +108,8 @@ bool Game::Update(double x, double y){
 
     //cout << "WHITE: " << bitboard.isKingInCheck(WHITE) << endl;
     //cout << "BLACK: " << bitboard.isKingInCheck(BLACK) << endl;
-    cout << bitboard.whiteCastleKing << bitboard.whiteCastleQueen << endl;
-    cout << bitboard.blackCastleKing << bitboard.blackCastleQueen << endl;
+    //cout << bitboard.whiteCastleKing << bitboard.whiteCastleQueen << endl;
+    //cout << bitboard.blackCastleKing << bitboard.blackCastleQueen << endl;
 
 
     // locx and locy hold the square that was clicked so now update the mask

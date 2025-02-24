@@ -1,6 +1,7 @@
 #include "Board.hpp"
 #include "Masks.hpp"
 #include <cassert>
+#include <iostream>
 
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
     U64 mask = 0;
@@ -46,17 +47,18 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
 
     // handle king castling
     if(piece == 'k'){
+        bool c = isKingInCheck(color);
         if(mask & (loc << 2)){
-            // can castle kinside
-            if(!(mask & (loc << 1))){
-                // cant move one left
+            if(c || !(mask & (loc << 1))){
                 mask ^= (loc << 2);
+                // can castle kinside
+                // cant castle in check
             }
-        }else if(mask & (loc >> 2)){
-            // castle queenside
-            if(!(mask & (loc >> 1))){
-                // cant move one to the side
-                mask ^= (loc >> 2);
+        }
+        if(mask & (loc >> 2)){
+            if(c || !(mask & (loc >> 1))){
+                // cant castle due to bing in check or cant move one to the left
+                mask ^= (loc >> 2); // cant castle in check
             }
         }
     }
@@ -263,7 +265,7 @@ int Board::isKingInCheck(Color color){
     }else{
         mask |= ((pawns >> 7) & ~hFile) | ((pawns >> 9) & ~aFile);
     }
-    if(pawns & loc) return 6;
+    if(mask & loc) return 6;
     return 0;
     // intersection with pawns if true, otherwise not in check
     // TODO not handling check by enpassant i think
@@ -316,7 +318,8 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
     // deal with special cases with pieces
     switch (piece) {
         case 'p':
-            // handle enpassant
+            // handle enpassanft
+            //if((color == BLACK && (enpassantLoc & whiteSide)) || (color == WHITE && (enpassantLoc & blackSide))){
             if(to == enpassantLoc){
                 // has to be a capture by enpassant
                 special = 5;
@@ -334,7 +337,9 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
                     enpassantLoc = 0;
 
                 }
-}
+            }
+           // }
+
             // generate enpassant squares
             else if(to == (from << 16)) enpassantLoc = from << 8;
             else if(to == (from >> 16)) enpassantLoc = from >> 8;
@@ -342,8 +347,10 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
 
             // pawn promo
             if(to & rank1 || to & rank8) pawnPromo = to;
+            else pawnPromo = 0;
             break;
         case 'k':
+            pawnPromo = 0;
             enpassantLoc = 0; // not a pawn move
             // handle castling
             if(color == WHITE && (whiteCastleQueen || whiteCastleKing)){
@@ -353,7 +360,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
                 whiteCastleQueen = 0;
                 whiteCastleKing = 0;
             }else if(color == BLACK && (blackCastleKing || blackCastleQueen)){
-                if(blackCastleKing && blackCastleKing) castlingRights = 'B';
+                if(blackCastleKing && blackCastleQueen) castlingRights = 'B';
                 else if(blackCastleKing) castlingRights = 'k';
                 else castlingRights = 'q';
                 blackCastleQueen = 0;
@@ -393,6 +400,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
             break;
         case 'r':
             enpassantLoc = 0; // not a pawn move
+            pawnPromo = 0;
             // handle castling rights
             if(color == WHITE){
                 if(from == 0x0000000000000001 && whiteCastleQueen){
@@ -416,6 +424,7 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
             break;
         default:
             enpassantLoc = 0; // not a pawn move
+            pawnPromo = 0;
     }
 
     // add to move stack
@@ -446,6 +455,8 @@ void Board::unMovePiece(){
         turn = WHITE;
     }
     
+    enpassantLoc = 0;
+    pawnPromo = 0;
     int board = getBoard(move.piece, move.color);
     // move the piece back
     *boards[board].i ^= move.to; // delete old piece
