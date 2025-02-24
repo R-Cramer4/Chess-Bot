@@ -138,7 +138,9 @@ bool Game::Update(double x, double y){
                 selectedPiece.col = bitboard.boards[i].col;
 
                 // If the piece bitboard | loc, this bitboard has been clicked
-                bitboard.colorMask = bitboard.generateMoves(loc, bitboard.boards[i].piece, bitboard.boards[i].col, true);
+                Move moves[256];
+                U64 len = bitboard.generateMoves(loc, bitboard.boards[i].piece, bitboard.boards[i].col, true, moves);
+                for(int i = 0; i < len; i++) bitboard.colorMask |= moves[i].to;
                 bitboard.colorMask |= loc;
             }
         }

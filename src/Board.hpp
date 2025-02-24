@@ -128,11 +128,13 @@ class Board{
         void printBoardState();
         std::string getMove(Move m);
 
-        U64 generateMoves(U64 loc, char type, Color color, bool top);
+        // moves needs to be of size 256
+        U64 generateMoves(U64 loc, char type, Color color, bool top, Move *moves);
         std::vector<Move> getAllMoves();
         U64 Perft(int depth);
 
-        void movePiece(U64 from, Color color, char piece, U64 newSpot);
+        Move movePiece(U64 from, Color color, char piece, U64 newSpot);
+        void movePiece(Move move);
         void promotePawn(U64 loc, Color color, char to);
         void unMovePiece();
 

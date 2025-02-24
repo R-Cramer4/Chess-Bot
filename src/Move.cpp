@@ -3,7 +3,7 @@
 #include <cassert>
 #include <iostream>
 
-U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
+U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves){
     U64 mask = 0;
 
     // generate pseudo legal moves
@@ -35,17 +35,23 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
 
     int board = getBoard(piece, color);
     U64 temp = mask;
+    int i = 0;
     while(temp != 0){
         U64 move = (temp & -temp);
         temp ^= move; // checks this move
 
-        movePiece(loc, color, piece, move);
+        Move m = movePiece(loc, color, piece, move);
         if(isKingInCheck(color)) mask ^= move; 
         // ^ in check so cant go there
+        else{
+            moves[i] = m; // can go here
+            i++;
+        }
         unMovePiece();
     }
 
     // handle king castling
+    // TODO need to take the illegal castle moves out
     if(piece == 'k'){
         bool c = isKingInCheck(color);
         if(mask & (loc << 2)){
@@ -62,7 +68,8 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top){
             }
         }
     }
-    return mask;
+    //return mask;
+    return i; // i is the amount of moves
 }
 U64 Board::getRookMove(U64 loc, Color color){
     U64 mask = 0;
@@ -271,9 +278,10 @@ int Board::isKingInCheck(Color color){
     // TODO not handling check by enpassant i think
 }
 
-void Board::movePiece(U64 from, Color color, char piece, U64 to){
+Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     // cant go to the same place, or not have a color
-    if(to & from || color == NONE) return;
+    Move m;
+    if(to & from || color == NONE) return m;
 
     char special = 0;
     char castlingRights = '0';
@@ -430,6 +438,173 @@ void Board::movePiece(U64 from, Color color, char piece, U64 to){
     // add to move stack
     moves.push({from, to, special, piece, color, castlingRights});
 
+    // update moves
+    halfMoves++;
+    if(turn == WHITE) turn = BLACK;
+    else{
+        turn = WHITE;
+        fullMoves++;
+    }
+    return moves.top();
+}
+void Board::movePiece(Move move){
+    int board = getBoard(move.piece, move.color);
+
+    // add to moves
+    moves.push(move);
+
+    // move piece
+    *boards[board].i ^= move.from;
+    *boards[board].i |= move.to;
+
+    // update bitboards
+    if(move.color == WHITE){
+        whitePieces ^= move.from;
+        whitePieces |= move.to;
+    }else{
+        blackPieces ^= move.from;
+        blackPieces |= move.to;
+    }
+
+    // pawn special moves
+    if(move.piece == 'p'){
+        if(move.from == (move.to << 16)) enpassantLoc = move.to << 8;
+        else if(move.from == (move.to >> 16)) enpassantLoc = move.to >> 8;
+        else enpassantLoc = 0;
+
+        if(move.to & rank1) pawnPromo = move.to;
+        else if(move.to & rank8) pawnPromo = move.to;
+        else pawnPromo = 0;
+    }else{
+        enpassantLoc = 0;
+        pawnPromo = 0;
+    }
+
+    if(move.special == 2){
+        // kingside castle
+        if(move.color == WHITE){
+            *boards[3].i ^= (U64)0x80;
+            whitePieces ^= (U64)0x80;
+            *boards[3].i |= (U64)0x20;
+            whitePieces |= (U64)0x20;
+        }else{
+            *boards[9].i ^= 0x8000000000000000;
+            blackPieces ^= 0x8000000000000000;
+            *boards[9].i |= 0x2000000000000000;
+            blackPieces |= 0x2000000000000000;
+        }
+    }else if(move.special == 3){
+        // queenside castle
+        if(move.color == WHITE){
+            *boards[3].i ^= (U64)0x1;
+            whitePieces ^= (U64)0x1;
+            *boards[3].i |= (U64)0x8;
+            whitePieces |= (U64)0x8;
+        }else{
+            *boards[9].i ^= 0x0100000000000000;
+            blackPieces ^= 0x0100000000000000;
+            *boards[9].i |= 0x0800000000000000;
+            blackPieces |= 0x0800000000000000;
+        }
+    }else if(move.special == 4){
+        // find the capture
+        int col;
+        if(move.color == WHITE){
+            col = 0;
+            blackPieces ^= move.to;
+        }else{
+            col = 6;
+            whitePieces ^= move.to;
+        }
+        for(int i = col; i < col + 6; i++){
+            if(*boards[i].i & move.to){
+                *boards[i].i ^= move.to; // remove the piece
+                // add to captures
+                captures.push({boards[i].piece, boards[i].col});
+                break;
+            }
+        }
+    }else if(move.special == 5){
+        // enpassant capture
+        if(move.color == WHITE){
+            *boards[6].i ^= (move.to >> 8); // remove black pawn
+            blackPieces ^= (move.to >> 8);
+            captures.push({'p', BLACK});
+        }else{
+            *boards[0].i ^= (move.to << 8); // remove white pawn
+            whitePieces ^= (move.to << 8);
+            captures.push({'p', WHITE});
+        }
+        enpassantLoc = 0;
+    }else if(move.special >= 8){ // promotion
+        // we moved the pawn earlier, so need to delete it again
+        *boards[board].i ^= move.to; // one less pawn
+        // dont need to update colored boards because adding a new piece there
+        if(move.special >= 12){
+            // promo with capture
+            int col;
+            if(move.color == WHITE){
+                col = 0;
+                blackPieces ^= move.to;
+            }else{
+                col = 6;
+                whitePieces ^= move.to;
+            }
+            for(int i = col; i < col + 6; i++){
+                if(*boards[i].i & move.to){
+                    *boards[i].i ^= move.to; // remove the piece
+                    // add to captures
+                    captures.push({boards[i].piece, boards[i].col});
+                    break;
+                }
+                if(i == col + 5) cout << "Never pushed a capture" << endl;
+            }
+        }
+        switch(move.special){
+            case 8:
+            case 12:
+                // knight
+                *boards[board + 1].i ^= move.to;
+                break;
+            case 9:
+            case 13:
+                // bishop
+                *boards[board + 2].i ^= move.to;
+                break;
+            case 10:
+            case 14:
+                // rook
+                *boards[board + 3].i ^= move.to;
+                break;
+            case 11:
+            case 15:
+                // queen
+                *boards[board + 4].i ^= move.to;
+        }
+    }
+    // castling
+    switch(move.castleRight){
+        case 'K':
+            whiteCastleKing = 0;
+            break;
+        case 'Q':
+            whiteCastleQueen = 0;
+            break;
+        case 'k':
+            blackCastleKing = 0;
+            break;
+        case 'q':
+            blackCastleQueen = 0;
+            break;
+        case 'W':
+            whiteCastleQueen = 0;
+            whiteCastleKing = 0;
+            break;
+        case 'B':
+            blackCastleQueen = 0;
+            blackCastleKing = 0;
+            break;
+    }
     // update moves
     halfMoves++;
     if(turn == WHITE) turn = BLACK;
@@ -766,9 +941,12 @@ std::vector<Move> Board::getAllMoves(){
             locMask ^= loc; // remove it
 
             // there is a piece at loc
-            U64 mask = generateMoves(loc, boards[i].piece, boards[i].col, true);
+            Move moves[256];
+            U64 mask = generateMoves(loc, boards[i].piece, boards[i].col, true, moves);
             // has all moves of this piece
             if(mask == 0) continue;
+            for(int i = 0; i < mask; i++) newMoves.push_back(moves[i]);
+            /*
             Move temp;
             temp.from = *boards[i].i & loc;
             temp.piece = boards[i].piece;
@@ -779,6 +957,7 @@ std::vector<Move> Board::getAllMoves(){
                 temp.to = loc;
                 newMoves.push_back(temp);
             }
+            */
         }
     }
 
@@ -790,7 +969,8 @@ U64 Board::Perft(int depth){
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
-        movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
+        //movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
+        movePiece(possMoves[i]);
         if(!isGameOver() && turn != NONE) moves += Perft(depth - 1);
         unMovePiece();
     }
