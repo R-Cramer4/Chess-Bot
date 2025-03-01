@@ -43,7 +43,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
         Move m = movePiece(loc, color, piece, move);
         if(isKingInCheck(color)) mask ^= move; 
         // ^ in check so cant go there
-        else{
+        else if(m.to != 0){
             moves[i] = m; // can go here
             i++;
         }
@@ -349,8 +349,8 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
            // }
 
             // generate enpassant squares
-            else if(to == (from << 16)) enpassantLoc = from << 8;
-            else if(to == (from >> 16)) enpassantLoc = from >> 8;
+            else if(to == (from << 16)) enpassantLoc = (from << 8);
+            else if(to == (from >> 16)) enpassantLoc = (from >> 8);
             else enpassantLoc = 0;
 
             // pawn promo
@@ -448,6 +448,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     return moves.top();
 }
 void Board::movePiece(Move move){
+    if(move.to == 0) return;
     int board = getBoard(move.piece, move.color);
 
     // add to moves
@@ -468,12 +469,12 @@ void Board::movePiece(Move move){
 
     // pawn special moves
     if(move.piece == 'p'){
-        if(move.from == (move.to << 16)) enpassantLoc = move.to << 8;
-        else if(move.from == (move.to >> 16)) enpassantLoc = move.to >> 8;
+        // generate enpassant squares
+        if(move.to == (move.from << 16)) enpassantLoc = (move.from << 8);
+        else if(move.to == (move.from >> 16)) enpassantLoc = (move.from >> 8);
         else enpassantLoc = 0;
 
-        if(move.to & rank1) pawnPromo = move.to;
-        else if(move.to & rank8) pawnPromo = move.to;
+        if(move.to & rank1 || move.to & rank8) pawnPromo = move.to;
         else pawnPromo = 0;
     }else{
         enpassantLoc = 0;
@@ -510,10 +511,10 @@ void Board::movePiece(Move move){
         // find the capture
         int col;
         if(move.color == WHITE){
-            col = 0;
+            col = 6;
             blackPieces ^= move.to;
         }else{
-            col = 6;
+            col = 0;
             whitePieces ^= move.to;
         }
         for(int i = col; i < col + 6; i++){
@@ -557,7 +558,6 @@ void Board::movePiece(Move move){
                     captures.push({boards[i].piece, boards[i].col});
                     break;
                 }
-                if(i == col + 5) cout << "Never pushed a capture" << endl;
             }
         }
         switch(move.special){

@@ -21,8 +21,8 @@ class quad{
         char piece;
 };
 struct Move{
-    U64 from;
-    U64 to;
+    U64 from = 0;
+    U64 to = 0;
     char special; // 0 - 15
     char piece;
     Color color;
