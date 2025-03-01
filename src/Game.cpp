@@ -120,11 +120,20 @@ bool Game::Update(double x, double y){
         if(*selectedPiece.i != loc && *selectedPiece.i != 0){
             // we didnt click on the same piece twice
             
-            bitboard.movePiece(*selectedPiece.i, selectedPiece.col, selectedPiece.piece, loc); // move piece
+            Move m;
+            for(int i = 0; i < 256; i++){
+                if(potentialMoves[i].from == 0) continue;
+                if(potentialMoves[i].to == loc){
+                    m = potentialMoves[i];
+                }
+            }
+            //bitboard.movePiece(*selectedPiece.i, selectedPiece.col, selectedPiece.piece, loc); // move piece
+            bitboard.movePiece(m);
             *selectedPiece.i = 0;
         }
         bitboard.colorMask = 0;
     }else{
+        bitboard.colorMask = 0;
         // clicked somewhere not in the mask already
 
         *selectedPiece.i = 0; // sets to be 0 if not already
@@ -138,9 +147,10 @@ bool Game::Update(double x, double y){
                 selectedPiece.col = bitboard.boards[i].col;
 
                 // If the piece bitboard | loc, this bitboard has been clicked
-                Move moves[256];
-                U64 len = bitboard.generateMoves(loc, bitboard.boards[i].piece, bitboard.boards[i].col, true, moves);
-                for(int i = 0; i < len; i++) bitboard.colorMask |= moves[i].to;
+                for(int i = 0; i < 256; i++) potentialMoves[i].from = 0; // nulls all old moves
+                U64 len = bitboard.generateMoves(loc, bitboard.boards[i].piece, 
+                                                 bitboard.boards[i].col, true, potentialMoves);
+                for(int i = 0; i < len; i++) bitboard.colorMask |= potentialMoves[i].to;
                 bitboard.colorMask |= loc;
             }
         }
@@ -175,7 +185,7 @@ void Game::pawnPromo(double x, double y){
     // not clamped to exactly on the img, so if you click off it it still gives you a pos in the quadrant you want
 
     Color c = WHITE;
-    if(turn == WHITE) c = BLACK;
+    if(bitboard.turn == WHITE) c = BLACK;
 
     char piece;
     if(locx == 0 && locy == 0) piece = 'b';
@@ -183,8 +193,32 @@ void Game::pawnPromo(double x, double y){
     else if(locy == 0) piece = 'n';
     else piece = 'r';
 
-    // TODO Fix
-    bitboard.promotePawn(bitboard.pawnPromo, c, piece);
+    Move m;
+    for(int i = 0; i < 256; i++){
+        if(potentialMoves[i].from == 0 || potentialMoves[i].to != bitboard.pawnPromo) continue;
+        switch (potentialMoves[i].special) {
+            case 8:
+            case 12:
+                if(piece == 'n') m = potentialMoves[i];
+                break;
+            case 9:
+            case 13:
+                if(piece == 'b') m = potentialMoves[i];
+                break;
+            case 10:
+            case 14:
+                if(piece == 'r') m = potentialMoves[i];
+                break;
+            case 11:
+            case 15:
+                if(piece == 'q') m = potentialMoves[i];
+                break;
+
+        }
+    }
+    bitboard.movePiece(m);
+
+    //bitboard.promotePawn(bitboard.pawnPromo, c, piece);
     bitboard.pawnPromo = 0;
 
 }

@@ -24,6 +24,7 @@ class Game{
         Color turn;
         U64 lastClicked = 0;
         quad selectedPiece = {&lastClicked, NONE, "", '0'};
+        Move potentialMoves[256];
 
         void pawnPromo(double x, double y);
 

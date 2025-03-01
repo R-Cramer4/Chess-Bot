@@ -51,7 +51,6 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
     }
 
     // handle king castling
-    // TODO need to take the illegal castle moves out
     if(piece == 'k'){
         bool c = isKingInCheck(color);
         if(mask & (loc << 2)){
@@ -59,12 +58,37 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
                 mask ^= (loc << 2);
                 // can castle kinside
                 // cant castle in check
+                // takes out of list
+                for(int k = 0; k < i; k++){
+                    if(moves[k].to == (loc << 2)) moves[k].from = 0;
+                }
             }
         }
         if(mask & (loc >> 2)){
             if(c || !(mask & (loc >> 1))){
                 // cant castle due to bing in check or cant move one to the left
                 mask ^= (loc >> 2); // cant castle in check
+                // takes out of the list
+                for(int k = 0; k < i; k++){
+                    if(moves[k].to == (loc << 2)) moves[k].from = 0;
+                }
+            }
+        }
+    }
+    if(piece == 'p' && (mask & rank1 || mask & rank8)){
+        // need to add promos
+        for(int k = 0; k < i; k++){
+            if(moves[k].special < 8 && (moves[k].to & rank1 || moves[k].to & rank8)){
+                // this move is the promotion
+                // need to modify this move and add 3 more
+                moves[k].special += 8; // knight promo or with capture
+                for(int j = 1; j < 4; j++){
+                    Move m = moves[k];
+                    m.special += j; // changes special
+                    moves[i] = m; // adds to loc
+                    cout << (int)moves[i].special << endl;
+                    i++;
+                }
             }
         }
     }
@@ -307,6 +331,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
                 captures.push({boards[i].piece, boards[i].col});
                 break;
             }
+            if(i == col + 5) cout << "never captured" << endl;
         }
     }
 
@@ -524,6 +549,7 @@ void Board::movePiece(Move move){
                 captures.push({boards[i].piece, boards[i].col});
                 break;
             }
+            if(i == col + 5) cout << "never captured" << endl;
         }
     }else if(move.special == 5){
         // enpassant capture
@@ -945,7 +971,10 @@ std::vector<Move> Board::getAllMoves(){
             U64 mask = generateMoves(loc, boards[i].piece, boards[i].col, true, moves);
             // has all moves of this piece
             if(mask == 0) continue;
-            for(int i = 0; i < mask; i++) newMoves.push_back(moves[i]);
+            for(int i = 0; i < mask; i++){
+                if(moves[i].from == 0) continue;
+                newMoves.push_back(moves[i]);
+            }
             /*
             Move temp;
             temp.from = *boards[i].i & loc;

@@ -85,7 +85,7 @@ class Board{
         U64 whitePieces = 0;
 
         U64 colorMask = 0;
-        U64 debugMask = kingMask;
+        U64 debugMask = 0;
 
         U64 enpassantLoc = 0;
         U64 pawnPromo = 0; // becomes the loc if a pawn is waiting on promotion
