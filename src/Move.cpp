@@ -86,7 +86,7 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
                     Move m = moves[k];
                     m.special += j; // changes special
                     moves[i] = m; // adds to loc
-                    cout << (int)moves[i].special << endl;
+                    //cout << (int)moves[i].special << endl;
                     i++;
                 }
             }
@@ -331,7 +331,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
                 captures.push({boards[i].piece, boards[i].col});
                 break;
             }
-            if(i == col + 5) cout << "never captured" << endl;
+            //if(i == col + 5) cout << "never captured" << endl;
         }
     }
 
@@ -549,7 +549,7 @@ void Board::movePiece(Move move){
                 captures.push({boards[i].piece, boards[i].col});
                 break;
             }
-            if(i == col + 5) cout << "never captured" << endl;
+            //if(i == col + 5) cout << "never captured" << endl;
         }
     }else if(move.special == 5){
         // enpassant capture
@@ -571,10 +571,10 @@ void Board::movePiece(Move move){
             // promo with capture
             int col;
             if(move.color == WHITE){
-                col = 0;
+                col = 6;
                 blackPieces ^= move.to;
             }else{
-                col = 6;
+                col = 0;
                 whitePieces ^= move.to;
             }
             for(int i = col; i < col + 6; i++){
