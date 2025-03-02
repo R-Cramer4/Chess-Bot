@@ -60,7 +60,13 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
                 // cant castle in check
                 // takes out of list
                 for(int k = 0; k < i; k++){
-                    if(moves[k].to == (loc << 2)) moves[k].from = 0;
+                    if(moves[k].to == (loc << 2)){
+                        // need to swap
+                        moves[k] = moves[i - 1];
+                        moves[i - 1].from = 0;
+                        i--;
+                    }
+
                 }
             }
         }
@@ -70,7 +76,12 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
                 mask ^= (loc >> 2); // cant castle in check
                 // takes out of the list
                 for(int k = 0; k < i; k++){
-                    if(moves[k].to == (loc << 2)) moves[k].from = 0;
+                    if(moves[k].to == (loc >> 2)){
+                        // need to swap
+                        moves[k] = moves[i - 1];
+                        moves[i - 1].from = 0;
+                        i--;
+                    }
                 }
             }
         }
@@ -308,7 +319,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     if(to & from || color == NONE) return m;
 
     char special = 0;
-    char castlingRights = '0';
+    char castlingRights = 0;
 
     // handle a capture
     int col;
@@ -329,6 +340,25 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
                 *boards[i].i ^= to; // remove the piece
                 // add to captures
                 captures.push({boards[i].piece, boards[i].col});
+                if(i == 3){
+                    // white rook
+                    if(whiteCastleKing && (to == WKRook)){
+                        castlingRights += 0b1000;
+                        whiteCastleKing = 0;
+                    }else if(whiteCastleQueen && (to == WQRook)){
+                        castlingRights += 0b0100;
+                        whiteCastleQueen = 0;
+                    }
+                }else if(i == 9){
+                    // black rook
+                    if(blackCastleKing && (to == BKRook)){
+                        castlingRights += 0b0010;
+                        blackCastleKing = 0;
+                    }else if(blackCastleQueen && (to == BQRook)){
+                        castlingRights += 0b0001;
+                        blackCastleQueen = 0;
+                    }
+                }
                 break;
             }
             //if(i == col + 5) cout << "never captured" << endl;
@@ -387,15 +417,15 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
             enpassantLoc = 0; // not a pawn move
             // handle castling
             if(color == WHITE && (whiteCastleQueen || whiteCastleKing)){
-                if(whiteCastleKing && whiteCastleQueen) castlingRights = 'W';
-                else if(whiteCastleKing) castlingRights = 'K';
-                else castlingRights = 'Q';
+                if(whiteCastleKing && whiteCastleQueen) castlingRights = 0b1100;
+                else if(whiteCastleKing) castlingRights = 0b1000;
+                else castlingRights = 0b0100;
                 whiteCastleQueen = 0;
                 whiteCastleKing = 0;
             }else if(color == BLACK && (blackCastleKing || blackCastleQueen)){
-                if(blackCastleKing && blackCastleQueen) castlingRights = 'B';
-                else if(blackCastleKing) castlingRights = 'k';
-                else castlingRights = 'q';
+                if(blackCastleKing && blackCastleQueen) castlingRights = 0b0011;
+                else if(blackCastleKing) castlingRights = 0b0010;
+                else castlingRights = 0b0001;
                 blackCastleQueen = 0;
                 blackCastleKing = 0;
             }
@@ -436,22 +466,22 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
             pawnPromo = 0;
             // handle castling rights
             if(color == WHITE){
-                if(from == 0x0000000000000001 && whiteCastleQueen){
+                if(from == WQRook && whiteCastleQueen){
                     whiteCastleQueen = 0;
-                    castlingRights = 'Q';
+                    castlingRights += 0b0100;
                 }
-                if(from == 0x0000000000000080 && whiteCastleKing){
+                if(from == WKRook && whiteCastleKing){
                     whiteCastleKing = 0;
-                    castlingRights = 'K';
+                    castlingRights += 0b1000;
                 }
             }else{
-                if(from == 0x0100000000000000 && blackCastleQueen){
+                if(from == BQRook && blackCastleQueen){
                     blackCastleQueen = 0;
-                    castlingRights = 'q';
+                    castlingRights += 0b0001;
                 } 
-                if(from == 0x8000000000000000 && blackCastleKing){
+                if(from == BKRook && blackCastleKing){
                     blackCastleKing = 0;
-                    castlingRights = 'k';
+                    castlingRights += 0b0010;
                 }
             }
             break;
@@ -609,6 +639,7 @@ void Board::movePiece(Move move){
         }
     }
     // castling
+    /*
     switch(move.castleRight){
         case 'K':
             whiteCastleKing = 0;
@@ -631,6 +662,15 @@ void Board::movePiece(Move move){
             blackCastleKing = 0;
             break;
     }
+    */
+
+    // if it was 1 to begin with (LHS) and it was removed (RHS) == false
+    // if it was 0 to begin with (LHS) auto false
+    whiteCastleQueen = whiteCastleQueen && !(move.castleRight & 0b0100);
+    whiteCastleKing = whiteCastleKing && !(move.castleRight & 0b1000);
+    blackCastleQueen = blackCastleQueen && !(move.castleRight & 0b0001);
+    blackCastleKing = blackCastleKing && !(move.castleRight & 0b0010);
+
     // update moves
     halfMoves++;
     if(turn == WHITE) turn = BLACK;
@@ -769,28 +809,36 @@ void Board::unMovePiece(){
         }
     }
     // update castling rights
+     /*
     switch (move.castleRight) {
-        case 'K':
+        case 0b1000:
             whiteCastleKing = 1;
             break;
-        case 'Q':
+        case 0b0100:
             whiteCastleQueen = 1;
             break;
-        case 'k':
+        case 0b0010:
             blackCastleKing = 1;
             break;
-        case 'q':
+        case 0b0001:
             blackCastleQueen = 1;
             break;
-        case 'W':
+        case 0b1100:
             whiteCastleQueen = 1;
             whiteCastleKing = 1;
             break;
-        case 'B':
+        case 0b0011:
             blackCastleQueen = 1;
             blackCastleKing = 1;
             break;
     }
+    */
+    // castling rights
+    // either still true (LHS == true) or was changed (RHS == true)
+    whiteCastleQueen = whiteCastleQueen || (move.castleRight & 0b0100);
+    whiteCastleKing = whiteCastleKing || (move.castleRight & 0b1000);
+    blackCastleQueen = blackCastleQueen || (move.castleRight & 0b0001);
+    blackCastleKing = blackCastleKing || (move.castleRight & 0b0010);
 }
 void Board::promotePawn(U64 loc, Color color, char to){
     // loc is the pawn to promote

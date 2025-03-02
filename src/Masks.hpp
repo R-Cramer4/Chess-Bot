@@ -23,9 +23,13 @@ const U64 lightSquares =  0x55AA55AA55AA55AA;
 const U64 darkSquares =   0xAA55AA55AA55AA55;
 
 const U64 WQPieces =      0x000000000000000E;
+const U64 WQRook =        0x0000000000000001;
 const U64 WKPieces =      0x0000000000000060;
+const U64 WKRook =        0x0000000000000080;
 const U64 BQPieces =      0x0E00000000000000;
+const U64 BQRook =        0x0100000000000000;
 const U64 BKPieces =      0x6000000000000000;
+const U64 BKRook =        0x8000000000000000;
 
 const U64 FullBoard =     0xFFFFFFFFFFFFFFFF;
 const U64 whiteSide =     0x00000000FFFFFFFF;

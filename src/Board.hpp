@@ -44,6 +44,12 @@ struct Move{
     // q = taken away black queenside castle
     // W = taken away both white castles
     // B = taken away both black castles
+    // 0b1111 = taken away all castles
+    // 0b0000 = taken away no castles
+    // 0b1100 = white castles
+    // 0b0011 = black castles
+    // 0b1010 = kingside castles
+    // 0b0101 = queenside castles
     bool operator==(Move m){
         return m.to == this->to &&
                 m.from == this->from &&

@@ -150,7 +150,9 @@ bool Game::Update(double x, double y){
                 for(int i = 0; i < 256; i++) potentialMoves[i].from = 0; // nulls all old moves
                 U64 len = bitboard.generateMoves(loc, bitboard.boards[i].piece, 
                                                  bitboard.boards[i].col, true, potentialMoves);
-                for(int i = 0; i < len; i++) bitboard.colorMask |= potentialMoves[i].to;
+                for(int i = 0; i < len; i++){
+                    if(potentialMoves[i].from) bitboard.colorMask |= potentialMoves[i].to;
+                }
                 bitboard.colorMask |= loc;
             }
         }
