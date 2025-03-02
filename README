@@ -1,6 +1,4 @@
 Chess Game written with OpenGL and C++
 
-Playble game, all valid moves implemented, but there still might be bugs
+Playble game, all valid moves implemented
 
-Not implemented:
-- Draw by repititon
