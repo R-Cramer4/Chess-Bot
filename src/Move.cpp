@@ -1001,6 +1001,7 @@ U64 Board::Perft(int depth){
         //movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
         movePiece(possMoves[i]);
         if(!isGameOver() && turn != NONE) moves += Perft(depth - 1);
+        else moves++; // can move here, just ends the game
         unMovePiece();
     }
     
