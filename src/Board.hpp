@@ -127,7 +127,7 @@ class Board{
         void reset(std::string fen); // resets everything with new fen
         void printLoc(U64 x);
 
-        int isGameOver();
+        int isGameOver(bool act);
         void printBoardState();
         std::string getMove(Move m);
 
@@ -145,8 +145,6 @@ class Board{
         int isKingInCheck(Color c);
 
     private:
-        // TODO maybe return list of moves instead of a mask
-        // so dont do same calculation twice
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);
         U64 getQueenMove(U64 loc, Color color);

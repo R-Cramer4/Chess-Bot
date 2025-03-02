@@ -158,7 +158,7 @@ bool Game::Update(double x, double y){
         }
         if(*selectedPiece.i == 0) bitboard.colorMask = loc;
     }
-    if(bitboard.isGameOver() != 0) return false;
+    if(bitboard.isGameOver(true) != 0) return false;
     if(*bitboard.boards[5].i == 0){
         cout << "Black wins" << endl;
         return false;

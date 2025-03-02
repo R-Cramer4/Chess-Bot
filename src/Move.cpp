@@ -1,7 +1,6 @@
 #include "Board.hpp"
 #include "Masks.hpp"
 #include <cassert>
-#include <iostream>
 
 U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves){
     U64 mask = 0;
@@ -31,9 +30,6 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
     if(color == WHITE) mask &= ~whitePieces;
     else mask &= ~blackPieces;
 
-    if(!top) return mask;
-
-    int board = getBoard(piece, color);
     U64 temp = mask;
     int i = 0;
     while(temp != 0){
@@ -102,7 +98,6 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
             }
         }
     }
-    //return mask;
     return i; // i is the amount of moves
 }
 U64 Board::getRookMove(U64 loc, Color color){
@@ -229,7 +224,6 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     int locMin = -1;
     int locMax = -1;
     U64 pieces = whitePieces | blackPieces; // holds all pieces
-    U64 colPieces = color == WHITE ? whitePieces : blackPieces;
 
     pieces ^= loc; // holds all pieces except loc
     pieces &= ray; // holds all pieces intersecting the ray
@@ -242,30 +236,26 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
     U64 posMask = pieces & ~(mask); // all bits after loc
     U64 negMask = pieces & mask; // bits below loc
 
-    max = posMask & -posMask; // gets the LSB above the loc
-
-    while(negMask != 0){
-        pieceSq = (negMask & -negMask); // isolate LSB
-        negMask ^= pieceSq; // remove it
-        min = pieceSq;
-    }
-
-
     // locMin is most significant less than sq
     // locMax is least significant greater than sq
     mask = FullBoard;
 
-    if(min != 0){
+    if(negMask != 0){
+        while(negMask != 0){
+            pieceSq = (negMask & -negMask); // isolate LSB
+            negMask ^= pieceSq; // remove it
+            min = pieceSq;
+        }
         locMin = getLSLoc(min);
         // shifts to the right so everything more significant than locMax is a 0
-        ray = ray & (mask << locMin);
+        ray &= (mask << locMin);
     }
-    if(max != 0){
-        locMax = getLSLoc(max);
-        ray = ray & (mask >> (63 - locMax)); // same deal as above
+    if(posMask != 0){
+        locMax = getLSLoc(posMask);
+        ray &= (mask >> (63 - locMax)); // same deal as above
     }
 
-    return ray & ~(ray & colPieces); // doesn't capture own pieces
+    return ray;
 }
 
 int Board::isKingInCheck(Color color){
@@ -310,7 +300,6 @@ int Board::isKingInCheck(Color color){
     if(mask & loc) return 6;
     return 0;
     // intersection with pawns if true, otherwise not in check
-    // TODO not handling check by enpassant i think
 }
 
 Move Board::movePiece(U64 from, Color color, char piece, U64 to){
@@ -362,7 +351,6 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
                 }
                 break;
             }
-            if(i == col + 5) cout << "never captured(gen)" << endl;
         }
     }
 
@@ -382,8 +370,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     // deal with special cases with pieces
     switch (piece) {
         case 'p':
-            // handle enpassanft
-            //if((color == BLACK && (enpassantLoc & whiteSide)) || (color == WHITE && (enpassantLoc & blackSide))){
+            // handle enpassant
             if(to == enpassantLoc){
                 // has to be a capture by enpassant
                 special = 5;
@@ -402,8 +389,6 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
 
                 }
             }
-           // }
-
             // generate enpassant squares
             else if(to == (from << 16)) enpassantLoc = (from << 8);
             else if(to == (from >> 16)) enpassantLoc = (from >> 8);
@@ -417,16 +402,15 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
             pawnPromo = 0;
             enpassantLoc = 0; // not a pawn move
             // handle castling
-            if(color == WHITE && (whiteCastleQueen || whiteCastleKing)){
-                if(whiteCastleKing && whiteCastleQueen) castlingRights = 0b1100;
-                else if(whiteCastleKing) castlingRights = 0b1000;
-                else castlingRights = 0b0100;
+            if(color == WHITE){
+                // branchless
+                castlingRights += whiteCastleKing * 0b1000;
+                castlingRights += whiteCastleQueen * 0b0100;
                 whiteCastleQueen = 0;
                 whiteCastleKing = 0;
-            }else if(color == BLACK && (blackCastleKing || blackCastleQueen)){
-                if(blackCastleKing && blackCastleQueen) castlingRights = 0b0011;
-                else if(blackCastleKing) castlingRights = 0b0010;
-                else castlingRights = 0b0001;
+            }else if(color == BLACK){
+                castlingRights += blackCastleKing * 0b0010;
+                castlingRights += blackCastleQueen * 0b0001;
                 blackCastleQueen = 0;
                 blackCastleKing = 0;
             }
@@ -580,7 +564,6 @@ void Board::movePiece(Move move){
                 captures.push({boards[i].piece, boards[i].col});
                 break;
             }
-            if(i == col + 5) cout << "never captured(move)" << endl;
         }
     }else if(move.special == 5){
         // enpassant capture
@@ -822,7 +805,9 @@ void Board::promotePawn(U64 loc, Color color, char to){
     }
     moves.push(move); // updates the move
 }
-int Board::isGameOver(){
+
+// if !act, only check if the kings are there
+int Board::isGameOver(bool act){
     int state = 0; // 0 means still playing
     // 1 = white wins by checkmate
     // 2 = black wins by checkmate
@@ -834,6 +819,7 @@ int Board::isGameOver(){
     // no kings left
     if(*boards[5].i == 0) return 2;
     if(*boards[11].i == 0) return 1;
+    if(!act) return 0;
 
     U64 pieces = blackPieces | whitePieces; // doesn't include kings
     pieces ^= *boards[5].i;
@@ -968,25 +954,13 @@ std::vector<Move> Board::getAllMoves(){
 
             // there is a piece at loc
             Move moves[256];
-            U64 mask = generateMoves(loc, boards[i].piece, boards[i].col, true, moves);
+            U64 len = generateMoves(loc, boards[i].piece, boards[i].col, true, moves);
             // has all moves of this piece
-            if(mask == 0) continue;
-            for(int i = 0; i < mask; i++){
+            if(len == 0) continue;
+            for(int i = 0; i < len; i++){
                 if(moves[i].from == 0) continue;
                 newMoves.push_back(moves[i]);
             }
-            /*
-            Move temp;
-            temp.from = *boards[i].i & loc;
-            temp.piece = boards[i].piece;
-            temp.color = boards[i].col;
-            while(mask != 0){
-                loc = (mask & -mask);
-                mask ^= loc; // removes the LSB
-                temp.to = loc;
-                newMoves.push_back(temp);
-            }
-            */
         }
     }
 
@@ -998,10 +972,9 @@ U64 Board::Perft(int depth){
     U64 moves = 0;
     std::vector<Move> possMoves = getAllMoves();
     for(int i = 0; i < possMoves.size(); i++){
-        //movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
         movePiece(possMoves[i]);
-        int status = isGameOver();
-        if(status != 1 && status != 2 && turn != NONE) moves += Perft(depth - 1);
+        int status = isGameOver(false);
+        if(!status) moves += Perft(depth - 1); // if there is kings left continue
         else moves++; // can move here, just ends the game
         unMovePiece();
     }
