@@ -97,7 +97,6 @@ U64 Board::generateMoves(U64 loc, char piece, Color color, bool top, Move *moves
                     Move m = moves[k];
                     m.special += j; // changes special
                     moves[i] = m; // adds to loc
-                    //cout << (int)moves[i].special << endl;
                     i++;
                 }
             }
@@ -321,6 +320,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
 
     char special = 0;
     char castlingRights = 0;
+    U64 oldEnpassant = enpassantLoc;
 
     // handle a capture
     int col;
@@ -362,7 +362,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
                 }
                 break;
             }
-            //if(i == col + 5) cout << "never captured" << endl;
+            if(i == col + 5) cout << "never captured(gen)" << endl;
         }
     }
 
@@ -492,7 +492,7 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     }
 
     // add to move stack
-    moves.push({from, to, special, piece, color, castlingRights});
+    moves.push({from, to, special, piece, color, castlingRights, oldEnpassant});
 
     // update moves
     halfMoves++;
@@ -580,7 +580,7 @@ void Board::movePiece(Move move){
                 captures.push({boards[i].piece, boards[i].col});
                 break;
             }
-            //if(i == col + 5) cout << "never captured" << endl;
+            if(i == col + 5) cout << "never captured(move)" << endl;
         }
     }else if(move.special == 5){
         // enpassant capture
@@ -673,7 +673,7 @@ void Board::unMovePiece(){
         turn = WHITE;
     }
     
-    enpassantLoc = 0;
+    enpassantLoc = move.enpassant;
     pawnPromo = 0;
     int board = getBoard(move.piece, move.color);
     // move the piece back

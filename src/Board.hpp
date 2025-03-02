@@ -38,18 +38,15 @@ struct Move{
     // 11 = queen promo
     // 12 - 15 = promo with capture
     char castleRight;
-    // K = taken away white kingside castle
-    // Q = taken away white queenside castle
-    // k = taken away black kingside castle
-    // q = taken away black queenside castle
-    // W = taken away both white castles
-    // B = taken away both black castles
-    // 0b1111 = taken away all castles
-    // 0b0000 = taken away no castles
-    // 0b1100 = white castles
-    // 0b0011 = black castles
+    // 0b1111 = taken away all castles = 15
+    // 0b0000 = taken away no castles = 0
+    // 0b1100 = white castles = 12
+    // 0b0011 = black castles = 
     // 0b1010 = kingside castles
     // 0b0101 = queenside castles
+    U64 enpassant = 0; 
+    // the enpassant square before anything was mvoed
+
     bool operator==(Move m){
         return m.to == this->to &&
                 m.from == this->from &&
