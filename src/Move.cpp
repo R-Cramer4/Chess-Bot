@@ -171,16 +171,17 @@ U64 Board::getKingMove(U64 loc, Color color){
     sq = ((sq & 0x7) >> 2);
     mask &= (sq * (~abFile)) | (!sq * (~ghFile));
 
+    U64 pieces = whitePieces | blackPieces;
     // castling
     if(color == WHITE){
-        mask |= (((whitePieces & WKPieces) == 0) && whiteCastleKing)
+        mask |= (((pieces & WKPieces) == 0) && whiteCastleKing)
             * (loc << 2);
-        mask |= (((whitePieces & WQPieces) == 0) && whiteCastleQueen)
+        mask |= (((pieces & WQPieces) == 0) && whiteCastleQueen)
             * (loc >> 2);
     }else{
-        mask |= (((blackPieces & BKPieces) == 0) && blackCastleKing)
+        mask |= (((pieces & BKPieces) == 0) && blackCastleKing)
             * (loc << 2);
-        mask |= (((blackPieces & BQPieces) == 0) && blackCastleQueen)
+        mask |= (((pieces & BQPieces) == 0) && blackCastleQueen)
             * (loc >> 2);
     }
 
