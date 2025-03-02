@@ -639,32 +639,8 @@ void Board::movePiece(Move move){
                 *boards[board + 4].i ^= move.to;
         }
     }
-    // castling
-    /*
-    switch(move.castleRight){
-        case 'K':
-            whiteCastleKing = 0;
-            break;
-        case 'Q':
-            whiteCastleQueen = 0;
-            break;
-        case 'k':
-            blackCastleKing = 0;
-            break;
-        case 'q':
-            blackCastleQueen = 0;
-            break;
-        case 'W':
-            whiteCastleQueen = 0;
-            whiteCastleKing = 0;
-            break;
-        case 'B':
-            blackCastleQueen = 0;
-            blackCastleKing = 0;
-            break;
-    }
-    */
 
+    // castling
     // if it was 1 to begin with (LHS) and it was removed (RHS) == false
     // if it was 0 to begin with (LHS) auto false
     whiteCastleQueen = whiteCastleQueen && !(move.castleRight & 0b0100);
@@ -809,31 +785,6 @@ void Board::unMovePiece(){
                 break;
         }
     }
-    // update castling rights
-     /*
-    switch (move.castleRight) {
-        case 0b1000:
-            whiteCastleKing = 1;
-            break;
-        case 0b0100:
-            whiteCastleQueen = 1;
-            break;
-        case 0b0010:
-            blackCastleKing = 1;
-            break;
-        case 0b0001:
-            blackCastleQueen = 1;
-            break;
-        case 0b1100:
-            whiteCastleQueen = 1;
-            whiteCastleKing = 1;
-            break;
-        case 0b0011:
-            blackCastleQueen = 1;
-            blackCastleKing = 1;
-            break;
-    }
-    */
     // castling rights
     // either still true (LHS == true) or was changed (RHS == true)
     whiteCastleQueen = whiteCastleQueen || (move.castleRight & 0b0100);
@@ -1049,7 +1000,8 @@ U64 Board::Perft(int depth){
     for(int i = 0; i < possMoves.size(); i++){
         //movePiece(possMoves[i].from, possMoves[i].color, possMoves[i].piece, possMoves[i].to);
         movePiece(possMoves[i]);
-        if(!isGameOver() && turn != NONE) moves += Perft(depth - 1);
+        int status = isGameOver();
+        if(status != 1 && status != 2 && turn != NONE) moves += Perft(depth - 1);
         else moves++; // can move here, just ends the game
         unMovePiece();
     }
