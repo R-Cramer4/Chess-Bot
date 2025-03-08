@@ -27,6 +27,7 @@ void Game::Init(string fen, int num){
     Resources::LoadTexture("textures/mask.png", true, "mask");
     Resources::LoadTexture("textures/pawn_promo.png", true, "pawnPromo");
 
+    opp.c = BLACK;
 
 
     if(fen == "perft") turn = bitboard.generateBitBoards("");
@@ -158,6 +159,11 @@ bool Game::Update(double x, double y){
         }
         if(*selectedPiece.i == 0) bitboard.colorMask = loc;
     }
+
+    // opponent move
+    if(bitboard.turn == opp.c && !bitboard.pawnPromo) opp.takeTurn(bitboard);
+
+
     if(bitboard.isGameOver(true) != 0) return false;
     if(*bitboard.boards[5].i == 0){
         cout << "Black wins" << endl;
@@ -195,32 +201,41 @@ void Game::pawnPromo(double x, double y){
     else if(locy == 0) piece = 'n';
     else piece = 'r';
 
-    Move m;
-    for(int i = 0; i < 256; i++){
-        if(potentialMoves[i].from == 0 || potentialMoves[i].to != bitboard.pawnPromo) continue;
-        switch (potentialMoves[i].special) {
-            case 8:
-            case 12:
-                if(piece == 'n') m = potentialMoves[i];
-                break;
-            case 9:
-            case 13:
-                if(piece == 'b') m = potentialMoves[i];
-                break;
-            case 10:
-            case 14:
-                if(piece == 'r') m = potentialMoves[i];
-                break;
-            case 11:
-            case 15:
-                if(piece == 'q') m = potentialMoves[i];
-                break;
+    // here i think we just update the bitboards instead of making a move 
+    // because the pawn is already there
+    // so its not a pawn it is a queen that always goes there
+    int loc = 0;
+    if(bitboard.turn == WHITE) loc = 6;
+    *bitboard.boards[loc + 4].i ^= bitboard.pawnPromo;
+    // need to update the last move special
+    Move m = bitboard.moves.top();
+    bitboard.moves.pop();
+    char special = m.special & 4; // isolates if capture
 
-        }
+    switch (piece) {
+        case 'n':
+            *bitboard.boards[loc + 1].i ^= bitboard.pawnPromo;
+            special += 8;
+            break;
+        case 'b':
+            *bitboard.boards[loc + 2].i ^= bitboard.pawnPromo;
+            special += 9;
+            break;
+        case 'r':
+            *bitboard.boards[loc + 3].i ^= bitboard.pawnPromo;
+            special += 10;
+            break;
+        case 'q':
+            *bitboard.boards[loc + 4].i ^= bitboard.pawnPromo;
+            special += 11;
+            break;
     }
-    bitboard.movePiece(m);
+    m.special = special;
+    bitboard.moves.push(m);
 
-    //bitboard.promotePawn(bitboard.pawnPromo, c, piece);
     bitboard.pawnPromo = 0;
+
+    // now make opp move
+    if(bitboard.turn == opp.c) opp.takeTurn(bitboard);
 
 }

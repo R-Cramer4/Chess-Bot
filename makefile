@@ -8,10 +8,10 @@ GRAPHICS = src/graphics
 OBJ = obj
 TEST = test
 
-main: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o $(OBJ)/Test.o $(OBJ)/Move.o
+main: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o $(OBJ)/Test.o $(OBJ)/Move.o $(OBJ)/Opponent.o
 	g++ $^ ${INC_LINUX} ${GL_LINUX} $(FLAGS) -o main
 
-testEx: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o $(OBJ)/Test.o $(OBJ)/Move.o
+testEx: src/glad.c $(OBJ)/main.o $(OBJ)/Game.o $(OBJ)/Shader.o $(OBJ)/Texture.o $(OBJ)/Resources.o $(OBJ)/SpriteRenderer.o $(OBJ)/Piece.o $(OBJ)/Board.o $(OBJ)/Test.o $(OBJ)/Move.o $(OBJ)/Opponent.o
 	g++ $^ ${INC_LINUX} ${GL_LINUX} $(FLAGS) -o testBot
 
 $(OBJ)/main.o: $(SRC)/main.cpp
@@ -40,6 +40,9 @@ $(OBJ)/Board.o: $(SRC)/Board.cpp $(SRC)/Board.hpp
 
 $(OBJ)/Move.o: $(SRC)/Move.cpp
 	g++ ${INC_LINUX} ${FLAGS} -c $(SRC)/Move.cpp -o $@
+
+$(OBJ)/Opponent.o: $(SRC)/Opponent.cpp $(SRC)/Opponent.hpp
+	g++ ${INC_LINUX} ${FLAGS} -c $(SRC)/Opponent.cpp -o $@
 
 $(OBJ)/Test.o: $(SRC)/Test.cpp $(SRC)/Test.hpp
 	g++ ${INC_LINUX} ${FLAGS} -c $(SRC)/Test.cpp -o $@

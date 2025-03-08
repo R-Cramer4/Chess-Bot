@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "Board.hpp"
+#include "Opponent.hpp"
 #include "graphics/SpriteRenderer.hpp"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
@@ -19,6 +20,7 @@ class Game{
         float boardH = 600.0;
 
         Board bitboard = Board();
+        Opponent opp = Opponent(BLACK);
         void drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r);
 
         Color turn;
