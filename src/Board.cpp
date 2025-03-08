@@ -227,3 +227,27 @@ string Board::boardToLoc(U64 board){
     loc += '1' + (sq / 8);
     return loc;
 }
+float Board::evalBoard(Color c){
+
+    // basic just count the number of pieces and associate a score
+    float matScore = 0;
+
+    // go through each piece
+    matScore +=     countBits(whitePawns) - countBits(blackPawns);
+    matScore += 3 * (countBits(whiteKnights) - countBits(blackKnights));
+    matScore += 3.1 * (countBits(whiteBishops) - countBits(blackBishops));
+    matScore += 5 * (countBits(whiteRooks) - countBits(blackRooks));
+    matScore += 9 * (countBits(whiteQueens) - countBits(blackQueens));
+    matScore += 200 * (countBits(whiteKing) - countBits(blackKing));
+
+    if(c == BLACK) return matScore * -1;
+    return matScore;
+}
+int Board::countBits(U64 i){
+    int num = 0;
+    while(i != 0){
+        i ^= (i & -i);
+        num++;
+    }
+    return num;
+}

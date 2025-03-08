@@ -3,7 +3,7 @@
 
 #include "Board.hpp"
 
-enum oppType {RAND, AI, MINMAX};
+enum oppType {RAND, AI, MINMAX, ALGO};
 
 class Opponent{
 
@@ -21,10 +21,12 @@ public:
 
 
 private:
-    oppType t = RAND;
+    oppType t = ALGO;
 
 
-    Move FindRandomMove(Board &b, vector<Move> &moves);
+    Move FindRandomMove(Board &b);
+
+    Move FindBestMove(Board &b);
 };
 
 

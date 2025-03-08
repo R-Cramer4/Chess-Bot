@@ -144,6 +144,8 @@ class Board{
         int getLSLoc(U64 mask);
         int isKingInCheck(Color c);
 
+        float evalBoard(Color c);
+
     private:
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);
@@ -156,6 +158,8 @@ class Board{
 
         int getBoard(char piece, Color color);
         std::string boardToLoc(U64 board);
+
+        int countBits(U64 i);
 };
 
 #endif
