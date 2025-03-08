@@ -5,7 +5,19 @@
 int Opponent::takeTurn(Board &b){
     auto moves = b.getAllMoves();
 
-    Move m = FindRandomMove(b, moves);
+    Move m;
+    // in the future when have different type of move algorithms
+    switch(this->t){
+        case RAND:
+            m = FindRandomMove(b, moves);
+            break;
+        case AI:
+            m = FindRandomMove(b, moves);
+            break;
+        case MINMAX:
+            m = FindRandomMove(b, moves);
+            break;
+    }
 
     b.movePiece(m);
     return 0;
