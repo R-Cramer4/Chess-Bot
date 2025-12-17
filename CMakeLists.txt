@@ -40,7 +40,8 @@ add_subdirectory(assets)
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 find_package(glfw3 3.4 REQUIRED)
+find_package(glm REQUIRED)
 
 target_include_directories(${PROJECT_NAME} PUBLIC include)
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw glm::glm)
 
