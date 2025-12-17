@@ -4,3 +4,6 @@ main
 testBot
 testBot.dSYM/
 .DS_Store
+build
+compile_commands.json
+.cache

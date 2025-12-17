@@ -2,7 +2,6 @@
 #include "graphics/Resources.hpp"
 #include "graphics/SpriteRenderer.hpp"
 #include "Board.hpp"
-#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 
@@ -10,22 +9,22 @@ SpriteRenderer *renderer;
 
 void Game::Init(string fen, int num){
     // load shaders
-    Resources::LoadShader("src/graphics/vertex.vert", "src/graphics/fragment.frag", nullptr, "sprite");
+    Resources::LoadShader(CHESS_ASSET_PATH "/shaders/vertex.vert", CHESS_ASSET_PATH "/shaders/fragment.frag", nullptr, "sprite");
     // shader config
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(this->Width), static_cast<float>(this->Height), 0.0f, -1.0f, 1.0f);
     Resources::GetShader("sprite").Use().SetInteger("image", 0);
     Resources::GetShader("sprite").SetMatrix4("projection", projection);
 
     renderer = new SpriteRenderer(Resources::GetShader("sprite"));
-    Resources::LoadTexture("textures/board.png", false, "board");
-    Resources::LoadTexture("textures/king.png", true, "king");
-    Resources::LoadTexture("textures/queen.png", true, "queen");
-    Resources::LoadTexture("textures/rook.png", true, "rook");
-    Resources::LoadTexture("textures/knight.png", true, "knight");
-    Resources::LoadTexture("textures/bishop.png", true, "bishop");
-    Resources::LoadTexture("textures/pawn.png", true, "pawn");
-    Resources::LoadTexture("textures/mask.png", true, "mask");
-    Resources::LoadTexture("textures/pawn_promo.png", true, "pawnPromo");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/board.png", false, "board");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/king.png", true, "king");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/queen.png", true, "queen");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/rook.png", true, "rook");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/knight.png", true, "knight");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/bishop.png", true, "bishop");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/pawn.png", true, "pawn");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/mask.png", true, "mask");
+    Resources::LoadTexture(CHESS_ASSET_PATH "textures/pawn_promo.png", true, "pawnPromo");
 
     opp.c = BLACK;
 
