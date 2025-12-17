@@ -1,4 +1,4 @@
-use quantum_chess::run;
+use Chess_Bot::run;
 
 
 // get the board state through a ffi layer from my c++ code

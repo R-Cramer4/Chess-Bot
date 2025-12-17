@@ -1,6 +1,7 @@
 pub mod ffi;
 
 use std::sync::Arc;
+use cxx::UniquePtr;
 use winit::{application::ApplicationHandler, event::{KeyEvent, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, keyboard::{KeyCode, PhysicalKey}, window::Window};
 
 pub struct State {
@@ -9,7 +10,8 @@ pub struct State {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     is_surface_configured: bool,
-    window: Arc<Window>
+    window: Arc<Window>,
+    board: UniquePtr<ffi::RustBoard>
 }
 
 impl State {
@@ -61,7 +63,8 @@ impl State {
             queue,
             config,
             is_surface_configured: false,
-            window
+            window,
+            board: ffi::make_board()
         })
     }
 
@@ -74,7 +77,7 @@ impl State {
         }
     }
     fn update(&mut self) {
-        println!("turn: {}", ffi::get_turn());
+        // handle board stuff here
 
     }
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
