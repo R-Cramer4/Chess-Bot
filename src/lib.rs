@@ -1,5 +1,7 @@
+pub mod ffi;
+
 use std::sync::Arc;
-use winit::{application::ApplicationHandler, event::{ElementState, KeyEvent, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, keyboard::{KeyCode, PhysicalKey}, window::Window};
+use winit::{application::ApplicationHandler, event::{KeyEvent, MouseButton, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, keyboard::{KeyCode, PhysicalKey}, window::Window};
 
 pub struct State {
     surface: wgpu::Surface<'static>,
@@ -72,6 +74,7 @@ impl State {
         }
     }
     fn update(&mut self) {
+        println!("turn: {}", ffi::get_turn());
 
     }
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {

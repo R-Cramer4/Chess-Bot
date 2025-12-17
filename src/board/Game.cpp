@@ -1,30 +1,9 @@
 #include "Game.hpp"
-#include "graphics/Resources.hpp"
-#include "graphics/SpriteRenderer.hpp"
 #include "Board.hpp"
 #include <cstdlib>
 #include <iostream>
 
-SpriteRenderer *renderer; 
-
 void Game::Init(string fen, int num){
-    // load shaders
-    Resources::LoadShader(CHESS_ASSET_PATH "/shaders/vertex.vert", CHESS_ASSET_PATH "/shaders/fragment.frag", nullptr, "sprite");
-    // shader config
-    glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(this->Width), static_cast<float>(this->Height), 0.0f, -1.0f, 1.0f);
-    Resources::GetShader("sprite").Use().SetInteger("image", 0);
-    Resources::GetShader("sprite").SetMatrix4("projection", projection);
-
-    renderer = new SpriteRenderer(Resources::GetShader("sprite"));
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/board.png", false, "board");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/king.png", true, "king");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/queen.png", true, "queen");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/rook.png", true, "rook");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/knight.png", true, "knight");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/bishop.png", true, "bishop");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/pawn.png", true, "pawn");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/mask.png", true, "mask");
-    Resources::LoadTexture(CHESS_ASSET_PATH "textures/pawn_promo.png", true, "pawnPromo");
 
     opp.c = BLACK;
 
@@ -46,10 +25,7 @@ void Game::Init(string fen, int num){
         //cout << "get board calls : " << bitboard.getBoardCalls << endl;
     }
 }
-void Game::Clear(){
-    Resources::Clear();
-    delete renderer;
-}
+/*
 void Game::Render(){
     renderer->DrawSprite(Resources::GetTexture("board"), glm::vec2(100.0f, 100.0f), glm::vec2(600.0f, 600.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
     U64 temp;
@@ -90,6 +66,7 @@ void Game::Render(){
 
     }
 }
+*/
 bool Game::Update(double x, double y){
     if(bitboard.pawnPromo){
         pawnPromo(x, y);
@@ -174,13 +151,6 @@ bool Game::Update(double x, double y){
     return true;
 }
 
-void Game::drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r){
-    int locx = ((Width - boardW) / 2) + ((boardW / 8) * x);
-    int locy = ((Height - boardH) / 2) + ((boardH / 8) * abs(y - 7));
-    // invert y so it draws properly
-
-    r->DrawSprite(Resources::GetTexture(texture), glm::vec2(locx, locy), glm::vec2(boardW / 8, boardH / 8), 0.0f, glm::vec3((float)c));
-}
 void Game::pawnPromo(double x, double y){
     // create pawn promo screen and handle clicks
     int locx, locy;

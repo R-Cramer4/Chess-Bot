@@ -3,14 +3,10 @@
 
 #include "Board.hpp"
 #include "Opponent.hpp"
-#include "graphics/SpriteRenderer.hpp"
-#include "glad/glad.h"
-#include <GLFW/glfw3.h>
 
 class Game{
     public:
         void Init(string fen = "", int num = 0);
-        void Render();
         bool Update(double x, double y); // mouse has clicked this pos
         void Clear();
         
@@ -21,7 +17,6 @@ class Game{
 
         Board bitboard = Board();
         Opponent opp = Opponent(BLACK);
-        void drawPiece(int x, int y, Color c, string texture, SpriteRenderer *r);
 
         Color turn;
         U64 lastClicked = 0;
