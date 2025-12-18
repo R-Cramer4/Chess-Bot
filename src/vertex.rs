@@ -51,6 +51,7 @@ pub enum InstanceType {
     BOARD = 8,
 }
 
+#[derive(Copy, Clone)]
 pub struct Instance {
     pub position: [f32; 3],
     pub scale: f32,
@@ -65,6 +66,13 @@ pub struct InstanceRaw {
 }
 
 impl Instance {
+    const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
+        5 => Float32x4,
+        6 => Float32x4,
+        7 => Float32x4,
+        8 => Float32x4,
+        9 => Uint32
+    ];
     pub fn to_raw(&self) -> InstanceRaw {
         InstanceRaw {
             model: (cgmath::Matrix4::from_translation(self.position.into())
@@ -73,15 +81,6 @@ impl Instance {
             id: self.id as u32,
         }
     }
-}
-impl InstanceRaw {
-    const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
-        5 => Float32x4,
-        6 => Float32x4,
-        7 => Float32x4,
-        8 => Float32x4,
-        9 => Uint32
-    ];
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         use std::mem;
         wgpu::VertexBufferLayout {
@@ -103,8 +102,8 @@ macro_rules! board {
                 let row = [$({
                     x += 1;
                     let instance = Instance {
-                        position: [x as f32, y as f32, 0.0],
-                        scale: 1.0,
+                        position: [(x) as f32 / 4.0, y as f32 / 4.0, 0.0],
+                        scale: 2.0,
                         id: $cell,
                     };
                     instance
