@@ -1,4 +1,4 @@
-Chess Game written with OpenGL and C++
+Chess Game written with WGPU and C++
 
 Playble game, all valid moves implemented
 

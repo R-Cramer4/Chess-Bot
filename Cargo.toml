@@ -1,12 +1,14 @@
 [package]
-name = "Chess-Bot"
+name = "chess-bot"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-cxx = {version = "1.0.192", features = ["c++20"]}
+bytemuck = { version = "1.24.0", features = ["derive"] }
+cxx = { version = "1.0.192", features = ["c++20"] }
 env_logger = "0.11.8"
+image = { version = "0.25.9", default-features = false, features = ["png"] }
 log = "0.4.29"
 pollster = "0.4.0"
 wgpu = "26.0.1"
