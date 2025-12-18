@@ -47,8 +47,7 @@ pub enum InstanceType {
     ROOK = 4,
     QUEEN = 5,
     KING = 6,
-    MASK = 7,
-    BOARD = 8,
+    BOARD = 7,
 }
 
 #[derive(Copy, Clone)]
@@ -56,6 +55,8 @@ pub struct Instance {
     pub position: [f32; 3],
     pub scale: f32,
     pub id: InstanceType,
+    pub color: u32,
+    pub mask: u32,
 }
 
 #[repr(C)]
@@ -63,15 +64,19 @@ pub struct Instance {
 pub struct InstanceRaw {
     pub model: [[f32; 4]; 4],
     pub id: u32,
+    pub color: u32,
+    pub mask: u32,
 }
 
 impl Instance {
-    const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
+    const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
         5 => Float32x4,
         6 => Float32x4,
         7 => Float32x4,
         8 => Float32x4,
-        9 => Uint32
+        9 => Uint32,
+        10 => Uint32,
+        11 => Uint32,
     ];
     pub fn to_raw(&self) -> InstanceRaw {
         InstanceRaw {
@@ -79,6 +84,8 @@ impl Instance {
                 * cgmath::Matrix4::from_scale(self.scale))
             .into(),
             id: self.id as u32,
+            color: self.color,
+            mask: self.mask,
         }
     }
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
@@ -105,6 +112,8 @@ macro_rules! board {
                         position: [(x) as f32 / 4.0, y as f32 / 4.0, 0.0],
                         scale: 2.0,
                         id: $cell,
+                        color: if y < 4 { 1 } else { 0 },
+                        mask: 0,
                     };
                     instance
                 }),+];

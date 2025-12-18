@@ -15,6 +15,8 @@ struct InstanceInput {
     @location(7) model_matrix2: vec4<f32>,
     @location(8) model_matrix3: vec4<f32>,
     @location(9) id: u32,
+    @location(10) color: u32,
+    @location(11) mask: u32,
 };
 
 struct VertexOutput {
@@ -22,6 +24,8 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
     @location(1) id: u32,
+    @location(2) color: u32,
+    @location(3) mask: u32,
 };
 
 @vertex
@@ -39,6 +43,8 @@ fn vs_main(
     out.tex_coords = model.tex_coords;
     out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
     out.id = instance.id;
+    out.color = instance.color;
+    out.mask = instance.mask;
     return out;
 }
 
@@ -56,45 +62,56 @@ var queen_t: texture_2d<f32>;
 @group(0) @binding(5)
 var king_t: texture_2d<f32>;
 @group(0) @binding(6)
-var mask_t: texture_2d<f32>;
-@group(0) @binding(7)
 var board_t: texture_2d<f32>;
-@group(0) @binding(8)
+@group(0) @binding(7)
 var texture_sampler: sampler;
 
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    var frag_color: vec4<f32> = vec4<f32>(0.0);
     switch (in.id) {
         case 0 {
-            discard;
+            break;
         }
         case 1 {
-            return textureSample(pawn_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(pawn_t, texture_sampler, in.tex_coords);
+            break;
         }
         case 2 {
-            return textureSample(knight_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(knight_t, texture_sampler, in.tex_coords);
+            break;
         }
         case 3 {
-            return textureSample(bishop_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(bishop_t, texture_sampler, in.tex_coords);
+            break;
         }
         case 4 {
-            return textureSample(rook_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(rook_t, texture_sampler, in.tex_coords);
+            break;
         }
         case 5 {
-            return textureSample(queen_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(queen_t, texture_sampler, in.tex_coords);
+            break;
         }
         case 6 {
-            return textureSample(king_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(king_t, texture_sampler, in.tex_coords);
+            break;
         }
         case 7 {
-            return textureSample(mask_t, texture_sampler, in.tex_coords);
-        }
-        case 8 {
-            return textureSample(board_t, texture_sampler, in.tex_coords);
+            frag_color = textureSample(board_t, texture_sampler, in.tex_coords);
+            break;
         }
         default {
             discard;
         }
     }
+    if (in.color == 0) {
+        frag_color = vec4<f32>(1.0 - frag_color.x, 1.0 - frag_color.y, 1.0 - frag_color.z, frag_color.w);
+    }
+    if (in.mask == 1) {
+        let mask_color: vec4<f32> = vec4<f32>(0.188, 0.110, 0.545, 1.0);
+        frag_color = mix(mask_color, frag_color, 0.5);
+    }
+    return frag_color;
 }

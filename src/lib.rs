@@ -80,6 +80,9 @@ impl ApplicationHandler<State> for App {
                     },
                 ..
             } => state.handle_key(event_loop, code, key_state.is_pressed()),
+            WindowEvent::CursorMoved { position, .. } => {
+                state.update_mouse_position(position.x, position.y)
+            }
             _ => {}
         }
     }

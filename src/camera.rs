@@ -62,7 +62,6 @@ impl Camera {
             label: Some("camera bind group"),
         });
 
-
         let mut camera = Camera {
             eye: (0.0, 0.0, 5.0).into(),
             target: (0.0, 0.0, 0.0).into(),
@@ -74,11 +73,10 @@ impl Camera {
             camera_bind_group_layout,
             camera_bind_group,
             camera_buffer,
-            camera_uniform
+            camera_uniform,
         };
         camera.update_view_proj(queue);
         camera
-
     }
     fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
         let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
@@ -88,7 +86,11 @@ impl Camera {
     }
     pub fn update_view_proj(&mut self, queue: &wgpu::Queue) {
         self.camera_uniform.view_proj = self.build_view_projection_matrix().into();
-        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
     }
 }
 

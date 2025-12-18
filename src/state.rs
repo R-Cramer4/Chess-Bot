@@ -79,7 +79,10 @@ impl State {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render pipeline layout"),
-                bind_group_layouts: &[&board.texture_bind_group_layout, &camera.camera_bind_group_layout],
+                bind_group_layouts: &[
+                    &board.texture_bind_group_layout,
+                    &camera.camera_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -121,7 +124,6 @@ impl State {
             cache: None,
         });
 
-
         Ok(Self {
             surface,
             device,
@@ -144,7 +146,7 @@ impl State {
         }
     }
     pub fn update(&mut self) {
-        // handle board stuff here
+        self.board.update_board();
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         self.window.request_redraw();
@@ -214,8 +216,14 @@ impl State {
     pub fn handle_mouse(
         &self,
         _event_loop: &ActiveEventLoop,
-        _button: MouseButton,
-        _is_pressed: bool,
+        button: MouseButton,
+        is_pressed: bool,
     ) {
+        if button == MouseButton::Left && is_pressed == true {
+            self.board.mouse_clicked();
+        }
+    }
+    pub fn update_mouse_position(&mut self, x: f64, y: f64) {
+        self.board.update_mouse_position(x, y);
     }
 }
