@@ -1,24 +1,29 @@
-mod state;
 mod ffi;
+mod state;
+#[macro_use]
 mod vertex;
-mod texture;
+mod board;
 mod camera;
+mod texture;
 
 use state::State;
 
 use std::sync::Arc;
-use winit::{application::ApplicationHandler, event::{KeyEvent, WindowEvent}, event_loop::{ActiveEventLoop, EventLoop}, keyboard::PhysicalKey, window::Window};
-
+use winit::{
+    application::ApplicationHandler,
+    event::{KeyEvent, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
+    keyboard::PhysicalKey,
+    window::Window,
+};
 
 pub struct App {
-    state: Option<State>
+    state: Option<State>,
 }
 
 impl App {
     pub fn new() -> Self {
-        Self {
-            state: None
-        }
+        Self { state: None }
     }
 }
 
@@ -35,14 +40,14 @@ impl ApplicationHandler<State> for App {
     }
 
     fn window_event(
-            &mut self,
-            event_loop: &ActiveEventLoop,
-            _window_id: winit::window::WindowId,
-            event: winit::event::WindowEvent,
-        ) {
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: winit::event::WindowEvent,
+    ) {
         let state = match &mut self.state {
             Some(canvas) => canvas,
-            None => return
+            None => return,
         };
 
         match event {
@@ -61,20 +66,22 @@ impl ApplicationHandler<State> for App {
                     }
                 }
             }
-            WindowEvent::MouseInput {state: key_state, 
-                button, .. } => state.handle_mouse(event_loop, button, key_state.is_pressed()),
-            WindowEvent::KeyboardInput { 
-                event: 
+            WindowEvent::MouseInput {
+                state: key_state,
+                button,
+                ..
+            } => state.handle_mouse(event_loop, button, key_state.is_pressed()),
+            WindowEvent::KeyboardInput {
+                event:
                     KeyEvent {
                         physical_key: PhysicalKey::Code(code),
                         state: key_state,
                         ..
                     },
-                .. 
+                ..
             } => state.handle_key(event_loop, code, key_state.is_pressed()),
             _ => {}
         }
-        
     }
 }
 pub fn run() -> anyhow::Result<()> {
@@ -87,4 +94,3 @@ pub fn run() -> anyhow::Result<()> {
     event_loop.run_app(&mut app)?;
     Ok(())
 }
-

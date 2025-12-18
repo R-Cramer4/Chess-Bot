@@ -1,6 +1,5 @@
 use chess_bot::run;
 
-
 // get the board state through a ffi layer from my c++ code
 // render that with wgpu
 

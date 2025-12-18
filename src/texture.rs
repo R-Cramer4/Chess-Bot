@@ -12,7 +12,7 @@ impl Texture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         bytes: &[u8],
-        label: &str
+        label: &str,
     ) -> Result<Self> {
         let img = image::load_from_memory(bytes)?;
         Self::from_image(device, queue, &img, Some(label))
@@ -22,10 +22,10 @@ impl Texture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
-        label: Option<&str>
+        label: Option<&str>,
     ) -> Result<Self> {
         let rgba = img.to_rgba8();
-        let dimensions= img.dimensions();
+        let dimensions = img.dimensions();
         let size = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
@@ -40,7 +40,7 @@ impl Texture {
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[]
+            view_formats: &[],
         });
 
         queue.write_texture(
@@ -49,14 +49,14 @@ impl Texture {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
-            }, 
-            &rgba, 
+            },
+            &rgba,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * dimensions.0),
                 rows_per_image: Some(dimensions.1),
-            }, 
-            size
+            },
+            size,
         );
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -69,7 +69,10 @@ impl Texture {
             ..Default::default()
         });
 
-        Ok(Self { texture, view, sampler })
-
+        Ok(Self {
+            texture,
+            view,
+            sampler,
+        })
     }
 }

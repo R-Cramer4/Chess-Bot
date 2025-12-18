@@ -7,16 +7,16 @@ pub mod ffi {
         Bishop,
         Rook,
         Queen,
-        King
+        King,
     }
     enum Color {
         Black,
-        White
+        White,
     }
     struct Piece {
         piece: PieceType,
         color: Color,
-        masked: bool
+        masked: bool,
     }
 
     unsafe extern "C++" {
