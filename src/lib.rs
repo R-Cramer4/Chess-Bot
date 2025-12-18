@@ -2,6 +2,7 @@ mod state;
 mod ffi;
 mod vertex;
 mod texture;
+mod camera;
 
 use state::State;
 
