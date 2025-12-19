@@ -70,7 +70,7 @@ impl State {
             view_formats: vec![],
         };
 
-        let board = Board::new(&device, &queue);
+        let board = Board::new(&device, &queue, (config.width as f32, config.height as f32));
         let camera = Camera::new(&device, &queue, config.width as f32 / config.height as f32);
 
         let shader =
@@ -220,7 +220,7 @@ impl State {
         is_pressed: bool,
     ) {
         if button == MouseButton::Left && is_pressed == true {
-            self.board.mouse_clicked();
+            self.board.mouse_clicked(self.camera.get_view_proj());
         }
     }
     pub fn update_mouse_position(&mut self, x: f64, y: f64) {

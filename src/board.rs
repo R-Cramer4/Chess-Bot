@@ -4,6 +4,7 @@ use crate::ffi;
 use crate::texture::*;
 use crate::vertex::*;
 
+use cgmath::SquareMatrix;
 use cxx::UniquePtr;
 use wgpu::util::DeviceExt;
 
@@ -50,10 +51,11 @@ pub struct Board {
 
     internal: UniquePtr<ffi::RustBoard>,
     mouse_position: (f64, f64),
+    screen_size: (f32, f32),
 }
 
 impl Board {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
+    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, screen_size: (f32, f32)) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex buffer"),
             contents: bytemuck::cast_slice(VERTICES),
@@ -194,21 +196,44 @@ impl Board {
             state: vec![],
             internal: ffi::make_board(),
             mouse_position: (0.0, 0.0),
+            screen_size,
         }
     }
 
     pub fn update_board(&self) {}
 
-    pub fn mouse_clicked(&self) {
-        // To check what object we clicked
-        // write object id to frame buffer
-        // map buffer to cpu
-        // lookup mouse position in frame buffer to get object id
+    pub fn mouse_clicked(&self, view_proj: cgmath::Matrix4<f32>) {
+        // honestly dont even need to do that, just convert mouse coords to (0, 1) and then use
+        // inverse of the view projection matrix
 
-        // because the camera never moves, we only need to do that mapping once
-        // and then reference the static buffer
-        // because this is cpu limited (thanks chess engine)
-        // we can write to an unused buffer and it should be fine
+        let mouse_coords = (
+            self.mouse_position.0 as f32 / self.screen_size.0,
+            self.mouse_position.1 as f32 / self.screen_size.1,
+        ); // in range [0.0, 1.0]
+
+        // transform to [-1.0, 1.0]
+        let mouse_coords = (mouse_coords.0 * 2.0, mouse_coords.1 * 2.0);
+        let mouse_coords = (mouse_coords.0 - 1.0, mouse_coords.1 - 1.0);
+
+        // transform to object space
+        let obj_coords = view_proj.invert().unwrap()
+            * cgmath::Vector4::new(mouse_coords.0, mouse_coords.1, 1.0, 1.0);
+
+        // find which piece was clicked
+        let mut instance: &Instance = &self.instances[0];
+        for i in &self.instances {
+            if i.id == InstanceType::BOARD {
+                continue;
+            }
+            if i.position[0] <= obj_coords.x && obj_coords.x <= i.position[0] + 1.0 {
+                if i.position[1] <= obj_coords.y && obj_coords.y <= i.position[1] + 1.0 {
+                    instance = i;
+                    break;
+                }
+            }
+        }
+        // board if clicked nothing, else it is a piece
+        println!("clicked obj: {:?}", instance.id);
     }
 
     pub fn update_mouse_position(&mut self, x: f64, y: f64) {

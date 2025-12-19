@@ -105,6 +105,9 @@ impl Camera {
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
     }
+    pub fn get_view_proj(&self) -> cgmath::Matrix4<f32> {
+        self.camera_uniform.view_proj.into()
+    }
 }
 
 impl CameraUniform {

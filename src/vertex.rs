@@ -38,7 +38,7 @@ pub const VERTICES: &[Vertex] = &[
 
 pub const INDICES: &[u16] = &[0, 1, 2, 2, 1, 3];
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum InstanceType {
     NONE = 0,
     PAWN = 1,
