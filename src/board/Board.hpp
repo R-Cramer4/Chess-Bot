@@ -146,6 +146,8 @@ class Board{
 
         float evalBoard(Color c);
 
+        U64 flipVertical(U64 x);
+
     private:
         U64 getRookMove(U64 loc, Color color);
         U64 getBishopMove(U64 loc, Color color);

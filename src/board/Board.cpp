@@ -251,3 +251,13 @@ int Board::countBits(U64 i){
     }
     return num;
 }
+U64 Board::flipVertical(U64 x) {
+    return ( (x << 56) ) |
+            ((x << 40) & rank7) |
+            ((x << 24) & rank6) |
+            ((x << 8) & rank5) |
+            ((x >> 8) & rank4) |
+            ((x >> 24) & rank3) |
+            ((x >> 40) & rank2) |
+            ((x >> 56));
+}

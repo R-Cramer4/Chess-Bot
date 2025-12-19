@@ -30,6 +30,7 @@ impl App {
 impl ApplicationHandler<State> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window_attributes = Window::default_attributes();
+        let window_attributes = window_attributes.with_title("chess");
 
         let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 

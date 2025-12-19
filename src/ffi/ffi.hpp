@@ -15,7 +15,7 @@ public:
     RustBoard();
     ~RustBoard();
     rust::Vec<Piece> get_board();
-    void piece_clicked(uint32_t spot);
+    bool piece_clicked(uint32_t spot);
 private:
     Game *game;
 };

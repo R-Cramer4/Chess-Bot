@@ -34,8 +34,10 @@ bool Game::handleClick(int x) {
     //cout << bitboard.blackCastleKing << bitboard.blackCastleQueen << endl;
 
 
-    // locx and locy hold the square that was clicked so now update the mask
     U64 loc = (U64)1 << x;
+    // mirror vertically after wrong rust -> c++ conversion
+    loc = bitboard.flipVertical(loc);
+
 
     // generate potential moves if we click on a piece
     if ((bitboard.colorMask & loc) != 0){

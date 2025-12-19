@@ -266,8 +266,11 @@ impl Board {
             loc += 1;
         }
         // board if clicked nothing, else it is a piece
-        println!("clicked obj: {:?}", instance.id);
-        self.internal.pin_mut().piece_clicked(loc);
+        if instance.id != InstanceType::BOARD {
+            if !self.internal.pin_mut().piece_clicked(loc) {
+                panic!("game over");
+            }
+        }
     }
 
     pub fn update_mouse_position(&mut self, x: f64, y: f64) {

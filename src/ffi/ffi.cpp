@@ -71,8 +71,8 @@ rust::Vec<Piece> RustBoard::get_board() {
     }
     return pieces;
 }
-void RustBoard::piece_clicked(uint32_t spot) {
-    game->handleClick(spot);
+bool RustBoard::piece_clicked(uint32_t spot) {
+    return game->handleClick(spot);
 }
 
 
