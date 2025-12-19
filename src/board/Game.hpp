@@ -5,27 +5,23 @@
 #include "Opponent.hpp"
 
 class Game{
-    public:
-        void Init(string fen = "", int num = 0);
-        bool Update(double x, double y); // mouse has clicked this pos
-        void Clear();
-        
-        unsigned int Width = 800;
-        unsigned int Height = 800;
-        float boardW = 600.0;
-        float boardH = 600.0;
+public:
+    Game(string fen = "", int num = 0);
 
-        Board bitboard = Board();
-        Opponent opp = Opponent(BLACK);
+    // returns true if the game is still going, false otherwise
+    bool handleClick(int x);
 
-        Color turn;
-        U64 lastClicked = 0;
-        quad selectedPiece = {&lastClicked, NONE, "", '0'};
-        Move potentialMoves[256];
+    Board bitboard = Board();
+    Opponent opp = Opponent(BLACK);
 
-        void pawnPromo(double x, double y);
+    Color turn;
+    U64 lastClicked = 0;
+    quad selectedPiece = {&lastClicked, NONE, "", '0'};
+    Move potentialMoves[256];
 
-        Color checkmate = NONE;
+    void pawnPromo(double x, double y);
+
+    Color checkmate = NONE;
 };
 
 

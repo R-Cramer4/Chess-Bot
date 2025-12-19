@@ -146,7 +146,7 @@ impl State {
         }
     }
     pub fn update(&mut self) {
-        self.board.update_board();
+        self.board.update_board(&self.queue);
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         self.window.request_redraw();
@@ -214,7 +214,7 @@ impl State {
         }
     }
     pub fn handle_mouse(
-        &self,
+        &mut self,
         _event_loop: &ActiveEventLoop,
         button: MouseButton,
         is_pressed: bool,

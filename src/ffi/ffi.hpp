@@ -4,7 +4,7 @@
 #include <memory>
 #include "rust/cxx.h"
 
-class Board;
+class Game;
 
 namespace ffi {
 
@@ -15,9 +15,9 @@ public:
     RustBoard();
     ~RustBoard();
     rust::Vec<Piece> get_board();
-    rust::Vec<Piece> piece_clicked(uint32_t spot);
+    void piece_clicked(uint32_t spot);
 private:
-    Board *board;
+    Game *game;
 };
 
 std::unique_ptr<RustBoard> make_board();

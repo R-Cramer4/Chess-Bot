@@ -87,7 +87,7 @@ impl Board {
                     .collect::<Vec<_>>()
                     .as_slice(),
             ),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let pawn = Texture::from_bytes(
@@ -200,9 +200,40 @@ impl Board {
         }
     }
 
-    pub fn update_board(&self) {}
+    pub fn update_board(&mut self, queue: &wgpu::Queue) {
+        self.state = self.internal.pin_mut().get_board();
+        for i in 0..self.state.len() {
+            self.instances[i + 1].mask = self.state[i].masked as u32;
+            self.instances[i + 1].color = match self.state[i].color {
+                ffi::Color::White => 1,
+                ffi::Color::Black => 0,
+                _ => panic!(),
+            };
+            self.instances[i + 1].id = match self.state[i].piece {
+                ffi::PieceType::None => InstanceType::NONE,
+                ffi::PieceType::Pawn => InstanceType::PAWN,
+                ffi::PieceType::Knight => InstanceType::KNIGHT,
+                ffi::PieceType::Bishop => InstanceType::BISHOP,
+                ffi::PieceType::Rook => InstanceType::ROOK,
+                ffi::PieceType::Queen => InstanceType::QUEEN,
+                ffi::PieceType::King => InstanceType::KING,
+                _ => panic!(),
+            };
+        }
+        queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(
+                self.instances
+                    .iter()
+                    .map(|x| x.to_raw())
+                    .collect::<Vec<_>>()
+                    .as_slice(),
+            ),
+        );
+    }
 
-    pub fn mouse_clicked(&self, view_proj: cgmath::Matrix4<f32>) {
+    pub fn mouse_clicked(&mut self, view_proj: cgmath::Matrix4<f32>) {
         // honestly dont even need to do that, just convert mouse coords to (0, 1) and then use
         // inverse of the view projection matrix
 
@@ -221,6 +252,7 @@ impl Board {
 
         // find which piece was clicked
         let mut instance: &Instance = &self.instances[0];
+        let mut loc = 0;
         for i in &self.instances {
             if i.id == InstanceType::BOARD {
                 continue;
@@ -231,9 +263,11 @@ impl Board {
                     break;
                 }
             }
+            loc += 1;
         }
         // board if clicked nothing, else it is a piece
         println!("clicked obj: {:?}", instance.id);
+        self.internal.pin_mut().piece_clicked(loc);
     }
 
     pub fn update_mouse_position(&mut self, x: f64, y: f64) {

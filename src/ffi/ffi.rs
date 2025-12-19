@@ -24,7 +24,7 @@ pub mod ffi {
 
         type RustBoard;
         pub fn get_board(self: Pin<&mut RustBoard>) -> Vec<Piece>;
-        pub fn piece_clicked(self: Pin<&mut RustBoard>, spot: u32) -> Vec<Piece>;
+        pub fn piece_clicked(self: Pin<&mut RustBoard>, spot: u32);
 
         pub fn make_board() -> UniquePtr<RustBoard>;
     }

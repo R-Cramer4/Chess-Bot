@@ -3,11 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 
-void Game::Init(string fen, int num){
-
-    opp.c = BLACK;
-
-
+Game::Game(string fen, int num){
     if(fen == "perft") turn = bitboard.generateBitBoards("");
     else turn = bitboard.generateBitBoards(fen);
 
@@ -25,64 +21,13 @@ void Game::Init(string fen, int num){
         //cout << "get board calls : " << bitboard.getBoardCalls << endl;
     }
 }
-/*
-void Game::Render(){
-    renderer->DrawSprite(Resources::GetTexture("board"), glm::vec2(100.0f, 100.0f), glm::vec2(600.0f, 600.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
-    U64 temp;
-    // color mask
-    temp = bitboard.colorMask;
-    while(temp != 0){
-        int loc = bitboard.getLSLoc(temp);
-        drawPiece(loc % 8, loc / 8, WHITE, "mask", renderer);
-
-        // temp - 1 << loc
-        temp = temp - ((U64)1 << (U64)loc);
-    }
-    temp = bitboard.debugMask;
-    while(temp != 0){
-        int loc = bitboard.getLSLoc(temp);
-        drawPiece(loc % 8, loc / 8, WHITE, "mask", renderer);
-
-        // temp - 1 << loc
-        temp = temp - ((U64)1 << (U64)loc);
-    }
-    
-    for(int i = 0; i < 12; i++){ // go through all bitboards
-        temp = *bitboard.boards[i].i;
-        while(temp != 0){
-            int loc = bitboard.getLSLoc(temp);
-            // find location with x and y
-            // draw the piece
-            drawPiece(loc % 8, loc / 8, bitboard.boards[i].col, bitboard.boards[i].texture, renderer);
-
-            // temp - 1 << loc
-            temp = temp - ((U64)1 << (U64)loc);
-        }
-    }
-
+bool Game::handleClick(int x) {
     if(bitboard.pawnPromo){
-        renderer->DrawSprite(Resources::GetTexture("pawnPromo"), 
-                            glm::vec2(boardW / 2, boardH / 2), glm::vec2(200.0f, 200.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
-
-    }
-}
-*/
-bool Game::Update(double x, double y){
-    if(bitboard.pawnPromo){
-        pawnPromo(x, y);
+        printf("need to handle pawn promo\n");
+        // pawnPromo(x, y);
         return true;
     }
     if(bitboard.debugMask != 0) bitboard.debugMask = 0;
-    // handle mouse clicks
-    int locx, locy;
-    locx = x - ((Width - boardW) / 2); // goes to edge of board
-    locx = locx / (boardW / 8); // now goes to pos
-    locy = y - ((Height - boardH) / 2); // goes to edge of board
-    locy = locy / (boardH / 8); // now goes to pos
-
-    // invert y
-    locy = abs(locy - 7);
-
     //cout << "WHITE: " << bitboard.isKingInCheck(WHITE) << endl;
     //cout << "BLACK: " << bitboard.isKingInCheck(BLACK) << endl;
     //cout << bitboard.whiteCastleKing << bitboard.whiteCastleQueen << endl;
@@ -90,10 +35,10 @@ bool Game::Update(double x, double y){
 
 
     // locx and locy hold the square that was clicked so now update the mask
-    U64 loc = ((U64)1 << ((U64)(locy * 8) + (U64)locx));
+    U64 loc = (U64)1 << x;
 
     // generate potential moves if we click on a piece
-    if((bitboard.colorMask & loc) != 0){
+    if ((bitboard.colorMask & loc) != 0){
         if(*selectedPiece.i != loc && *selectedPiece.i != 0){
             // we didnt click on the same piece twice
             
@@ -109,7 +54,7 @@ bool Game::Update(double x, double y){
             *selectedPiece.i = 0;
         }
         bitboard.colorMask = 0;
-    }else{
+    } else {
         bitboard.colorMask = 0;
         // clicked somewhere not in the mask already
 
@@ -137,7 +82,7 @@ bool Game::Update(double x, double y){
     }
 
     // opponent move
-    if(bitboard.turn == opp.c && !bitboard.pawnPromo) opp.takeTurn(bitboard);
+    // if(bitboard.turn == opp.c && !bitboard.pawnPromo) opp.takeTurn(bitboard);
 
 
     if(bitboard.isGameOver(true) != 0) return false;
@@ -152,6 +97,8 @@ bool Game::Update(double x, double y){
 }
 
 void Game::pawnPromo(double x, double y){
+    // TODO
+    /*
     // create pawn promo screen and handle clicks
     int locx, locy;
     locx = x - ((Width - boardW) / 2); // goes to edge of board
@@ -206,5 +153,6 @@ void Game::pawnPromo(double x, double y){
 
     // now make opp move
     if(bitboard.turn == opp.c) opp.takeTurn(bitboard);
+    */
 
 }
