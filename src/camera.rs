@@ -18,10 +18,12 @@ pub struct Camera {
     pub eye: cgmath::Point3<f32>,
     pub target: cgmath::Point3<f32>,
     pub up: cgmath::Vector3<f32>,
-    pub aspect: f32,
-    pub fovy: f32,
-    pub znear: f32,
-    pub zfar: f32,
+    left: f32,
+    right: f32,
+    top: f32,
+    bottom: f32,
+    znear: f32,
+    zfar: f32,
 
     pub camera_bind_group_layout: wgpu::BindGroupLayout,
     pub camera_bind_group: wgpu::BindGroup,
@@ -30,7 +32,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, size: (f32, f32)) -> Self {
+    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, aspect: f32) -> Self {
         let camera_uniform = CameraUniform::new();
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
@@ -62,12 +64,16 @@ impl Camera {
             label: Some("camera bind group"),
         });
 
+        let width = 15.0;
+
         let mut camera = Camera {
-            eye: (0.0, 0.0, 5.0).into(),
+            eye: (0.0, 0.0, 2.0).into(),
             target: (0.0, 0.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
-            aspect: size.0 as f32 / size.1,
-            fovy: 45.0,
+            left: -width / 2.0,
+            right: width / 2.0,
+            top: (width / aspect) / 2.0,
+            bottom: -(width / aspect) / 2.0,
             znear: 0.1,
             zfar: 10.0,
             camera_bind_group_layout,
@@ -80,7 +86,14 @@ impl Camera {
     }
     fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
         let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
+        let proj = cgmath::ortho(
+            self.left,
+            self.right,
+            self.bottom,
+            self.top,
+            self.znear,
+            self.zfar,
+        );
 
         return OPENGL_TO_WGPU_MATRIX * proj * view;
     }

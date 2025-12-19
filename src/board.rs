@@ -65,8 +65,8 @@ impl Board {
             usage: wgpu::BufferUsages::INDEX,
         });
         let mut instances: Vec<Instance> = vec![Instance {
-            position: [0.0, 0.0, 0.0],
-            scale: 20.0,
+            position: [-4.0, -4.0, 0.0],
+            scale: 80.0,
             id: InstanceType::BOARD,
             color: 1,
             mask: 0,

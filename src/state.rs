@@ -71,7 +71,7 @@ impl State {
         };
 
         let board = Board::new(&device, &queue);
-        let camera = Camera::new(&device, &queue, (config.width as f32, config.height as f32));
+        let camera = Camera::new(&device, &queue, config.width as f32 / config.height as f32);
 
         let shader =
             device.create_shader_module(wgpu::include_wgsl!("../assets/shaders/shader.wgsl"));

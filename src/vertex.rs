@@ -109,10 +109,10 @@ macro_rules! board {
                 let row = [$({
                     x += 1;
                     let instance = Instance {
-                        position: [(x) as f32 / 4.0, y as f32 / 4.0, 0.0],
-                        scale: 2.0,
+                        position: [(x - 4) as f32, (y - 4) as f32, 1.0],
+                        scale: 10.0,
                         id: $cell,
-                        color: if y < 4 { 1 } else { 0 },
+                        color: if y < 4{ 1 } else { 0 },
                         mask: 0,
                     };
                     instance
