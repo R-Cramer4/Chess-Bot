@@ -254,7 +254,6 @@ U64 Board::getBlackPieces() {
         | blackQueens
         | blackKing;
 }
-/*
 Board::Board(Board &ref) {
     this->whitePawns = ref.whitePawns;
     this->whiteKnights = ref.whiteKnights;
@@ -287,4 +286,3 @@ Board::Board(Board &ref) {
 
     this->turn = ref.turn;
 }
-*/

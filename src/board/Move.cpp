@@ -1053,6 +1053,7 @@ std::vector<Move> Board::getAllMoves(){
     getAllMovesFromBoard(blackQueens, 'q', BLACK, newMoves);
     getAllMovesFromBoard(blackKing, 'k', BLACK, newMoves);
 
+    assert(newMoves.size() > 0);
     return newMoves;
 }
 U64 Board::Perft(int depth){

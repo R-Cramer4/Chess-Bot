@@ -98,7 +98,7 @@ public:
     Color turn = WHITE;
 
     Board() = default;
-    //Board(Board &ref);
+    Board(Board &ref);
 
     Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
     void reset(std::string fen); // resets everything with new fen
@@ -111,6 +111,7 @@ public:
     // moves needs to be of size 256
     U64 generateMoves(U64 loc, char type, Color color, bool top, Move *moves);
     std::vector<Move> getAllMoves();
+    int getAllMovesForColor(Color color, Move *moves);
     U64 Perft(int depth);
 
     Move movePiece(U64 from, Color color, char piece, U64 newSpot);
@@ -121,6 +122,9 @@ public:
     int getLSLoc(U64 mask);
     int isKingInCheck(Color c);
 
+    // returns an evaluation of the board where
+    // more positive is good for c
+    // more negative is bad for c
     float evalBoard(Color c);
 
     U64 flipVertical(U64 x);

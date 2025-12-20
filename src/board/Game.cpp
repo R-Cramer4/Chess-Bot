@@ -4,7 +4,9 @@
 #include <cstring>
 #include <iostream>
 
-Game::Game(string fen, int num){
+Game::Game(string fen, int num)
+    : opp(bitboard, BLACK)
+{
     if(fen == "perft") turn = bitboard.generateBitBoards("");
     else turn = bitboard.generateBitBoards(fen);
 
@@ -21,6 +23,7 @@ Game::Game(string fen, int num){
         //cout << "Is king in check calls : " << bitboard.isKingInCheckCalls << endl;
         //cout << "get board calls : " << bitboard.getBoardCalls << endl;
     }
+    opp.setBoard(bitboard);
 }
 bool Game::handleClick(int x) {
     if(bitboard.pawnPromo){
@@ -39,17 +42,19 @@ bool Game::handleClick(int x) {
     // mirror vertically after wrong rust -> c++ conversion
     loc = bitboard.flipVertical(loc);
 
+    Move m;
+    bool moveMade = false;
 
     // generate potential moves if we click on a piece
     if ((bitboard.colorMask & loc) != 0){
         if(*selectedPiece.i != loc && *selectedPiece.i != 0){
             // we didnt click on the same piece twice
             
-            Move m;
             for(int i = 0; i < 256; i++){
                 if(potentialMoves[i].from == 0) continue;
                 if(potentialMoves[i].to == loc){
                     m = potentialMoves[i];
+                    moveMade = true;
                 }
             }
             //bitboard.movePiece(*selectedPiece.i, selectedPiece.col, selectedPiece.piece, loc); // move piece
@@ -98,8 +103,11 @@ bool Game::handleClick(int x) {
     }
 
     // opponent move
-    if(bitboard.turn == opp.c && !bitboard.pawnPromo) opp.takeTurn(bitboard);
-
+    if (moveMade && bitboard.turn == opp.color) {
+        // TODO handle the case its currently a pawn promo screen
+        opp.moveTaken(m); 
+        bitboard.movePiece(opp.takeTurn());
+    }
 
     if(bitboard.isGameOver(true) != 0) return false;
     if (bitboard.whiteKing == 0) {

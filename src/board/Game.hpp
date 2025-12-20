@@ -12,7 +12,7 @@ public:
     bool handleClick(int x);
 
     Board bitboard = Board();
-    Opponent opp = Opponent(BLACK);
+    Opponent opp;
 
     Color turn;
     U64 lastClicked = 0;
