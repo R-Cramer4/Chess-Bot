@@ -23,6 +23,7 @@ void Test(string input, string output){
 
     // time taken
     chrono::time_point<chrono::steady_clock> fullTestStart = chrono::steady_clock::now();
+    unsigned long long positionsCalculated = 0;
     int i = 0;
     while(getline(in, inString)){
         // time each test
@@ -35,7 +36,11 @@ void Test(string input, string output){
         out << outString << endl; // output
 
         numSucceed += printTestResult(temp, res, i);
-        cout << "Test " << i << " took " << chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - testStart).count() << "ms" << endl;
+        auto milliseconds = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - testStart).count();
+        long long int positions = res.d1 + res.d2 + res.d3 + res.d4 + res.d5 + res.d6;
+        long long int positionsPerSecond = (double)positions / ((double) milliseconds / 1000.0);
+        positionsCalculated += positions;
+        cout << "Test " << i << " took " << milliseconds << "ms, " << positionsPerSecond << " positions per second" << endl;
     }
 
     in.close();
@@ -49,7 +54,9 @@ void Test(string input, string output){
         cout << "\033[1m" << numSucceed << "/" << i << " of tests passed\033[0m\n";
     }
     // time full tests
-    cout << "Tests took " << chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - fullTestStart).count() << "ms" << endl;
+    auto milliseconds = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - fullTestStart).count();
+    long long int positionsPerSecond = (double)positionsCalculated / ((double) milliseconds / 1000.0);
+    cout << "Tests took " << milliseconds << "ms, an average of " << positionsPerSecond << " per second" << endl;
 }
 
 testBoard perftTest(testBoard in){
