@@ -25,7 +25,10 @@ void Node::generateMoves(int depth) {
     data.clear(); // I shouldn't be clearing this every time
 
     auto boardMoves = board->getAllMoves();
-    assert(boardMoves.size() > 0);
+    if (boardMoves.size() == 0) {
+        eval = board->evalBoard(player);
+        return;
+    }
     for (auto m : boardMoves) {
         Data d;
         d.m = m;
@@ -55,7 +58,8 @@ void Node::generateMoves(int depth) {
             maxEval = d.board->eval;
         }
     }
-    eval = maxEval * -1; // to make it our best move
+    // for some reason I shouldn't multiply by -1
+    eval = maxEval; // to make it our best move
 }
 
 
@@ -105,7 +109,7 @@ Move Opponent::takeTurn(){
 }
 
 Move Opponent::findBestMove(){
-    currentState->generateMoves(2); // right now do a depth of 2
+    currentState->generateMoves(3); // right now do a depth of 2
 
     Move bestMove;
     float maxEval = -FLT_MAX;
