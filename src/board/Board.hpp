@@ -7,18 +7,11 @@
 #include "Masks.hpp"
 
 
-class quad{
-    public:
-        quad(U64* i, Color c, std::string s, char p){
-            this->i = i;
-            this->col = c;
-            this->texture = s;
-            this->piece = p;
-        }
-        U64* i;
-        Color col;
-        std::string texture;
-        char piece;
+struct quad{
+    U64* i;
+    Color col;
+    std::string texture;
+    char piece;
 };
 struct Move{
     U64 from = 0;
@@ -58,110 +51,100 @@ struct Move{
 };
 
 class Board{
-    public:
-        int gameOver = 0; // 0 means still playing
-        // 1 = white wins by checkmate
-        // 2 = black wins by checkmate
-        // 3 = stalemate
-        // 4 = insufficient material
-        // 5 = 50 move rule
-        // 6 = stalemate by repitition
+public:
+    int gameOver = 0; // 0 means still playing
+    // 1 = white wins by checkmate
+    // 2 = black wins by checkmate
+    // 3 = stalemate
+    // 4 = insufficient material
+    // 5 = 50 move rule
+    // 6 = stalemate by repitition
 
-        // using a binary representation where the least significant bit is A1
-        // the most significant bit is H8
-        // so the first 8 bits are A1 - A8
-        U64 whitePawns = 0;
-        U64 whiteKnights = 0;
-        U64 whiteBishops = 0;
-        U64 whiteRooks = 0;
-        U64 whiteQueens = 0;
-        U64 whiteKing = 0;
+    // using a binary representation where the least significant bit is A1
+    // the most significant bit is H8
+    // so the first 8 bits are A1 - A8
+    U64 whitePawns = 0;
+    U64 whiteKnights = 0;
+    U64 whiteBishops = 0;
+    U64 whiteRooks = 0;
+    U64 whiteQueens = 0;
+    U64 whiteKing = 0;
 
-        U64 blackPawns = 0;
-        U64 blackKnights = 0;
-        U64 blackBishops = 0;
-        U64 blackRooks = 0;
-        U64 blackQueens = 0;
-        U64 blackKing = 0;
+    U64 blackPawns = 0;
+    U64 blackKnights = 0;
+    U64 blackBishops = 0;
+    U64 blackRooks = 0;
+    U64 blackQueens = 0;
+    U64 blackKing = 0;
 
-        U64 blackPieces = 0;
-        U64 whitePieces = 0;
+    U64 blackPieces = 0;
+    U64 whitePieces = 0;
 
-        U64 colorMask = 0;
-        U64 debugMask = 0;
+    U64 colorMask = 0;
+    U64 debugMask = 0;
 
-        U64 enpassantLoc = 0;
-        U64 pawnPromo = 0; // becomes the loc if a pawn is waiting on promotion
+    U64 enpassantLoc = 0;
+    U64 pawnPromo = 0; // becomes the loc if a pawn is waiting on promotion
 
-        bool whiteCastleKing = 0;
-        bool whiteCastleQueen = 0;
-        bool blackCastleKing = 0;
-        bool blackCastleQueen = 0;
+    bool whiteCastleKing = 0;
+    bool whiteCastleQueen = 0;
+    bool blackCastleKing = 0;
+    bool blackCastleQueen = 0;
 
-        int halfMoves = 0;
-        int fullMoves = 0;
-        std::stack<Move> moves;
-        std::stack<std::pair<char, Color>> captures;
+    int halfMoves = 0;
+    int fullMoves = 0;
+    std::stack<Move> moves;
+    std::stack<std::pair<char, Color>> captures;
 
-        Color turn = WHITE;
+    Color turn = WHITE;
 
-        quad boards[12] = {
-            {&whitePawns, WHITE, "pawn", 'p'},
-            {&whiteKnights, WHITE, "knight", 'n'},
-            {&whiteBishops, WHITE, "bishop", 'b'},
-            {&whiteRooks, WHITE, "rook", 'r'},
-            {&whiteQueens, WHITE, "queen", 'q'},
-            {&whiteKing, WHITE, "king", 'k'},
-            {&blackPawns, BLACK, "pawn", 'p'},
-            {&blackKnights, BLACK, "knight", 'n'},
-            {&blackBishops, BLACK, "bishop", 'b'},
-            {&blackRooks, BLACK, "rook", 'r'},
-            {&blackQueens, BLACK, "queen", 'q'},
-            {&blackKing, BLACK, "king", 'k'}
-        };
-        
-        Board(){}
-        Board(Board &ref);
+    Board() = default;
+    Board(Board &ref);
 
-        Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
-        void reset(std::string fen); // resets everything with new fen
-        void printLoc(U64 x);
+    Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
+    void reset(std::string fen); // resets everything with new fen
+    void printLoc(U64 x);
 
-        int isGameOver(bool act);
-        void printBoardState();
-        std::string getMove(Move m);
+    int isGameOver(bool act);
+    void printBoardState();
+    std::string getMove(Move m);
 
-        // moves needs to be of size 256
-        U64 generateMoves(U64 loc, char type, Color color, bool top, Move *moves);
-        std::vector<Move> getAllMoves();
-        U64 Perft(int depth);
+    // moves needs to be of size 256
+    U64 generateMoves(U64 loc, char type, Color color, bool top, Move *moves);
+    std::vector<Move> getAllMoves();
+    U64 Perft(int depth);
 
-        Move movePiece(U64 from, Color color, char piece, U64 newSpot);
-        void movePiece(Move move);
-        void promotePawn(U64 loc, Color color, char to);
-        void unMovePiece();
+    Move movePiece(U64 from, Color color, char piece, U64 newSpot);
+    void movePiece(Move move);
+    void promotePawn(U64 loc, Color color, char to);
+    void unMovePiece();
 
-        int getLSLoc(U64 mask);
-        int isKingInCheck(Color c);
+    int getLSLoc(U64 mask);
+    int isKingInCheck(Color c);
 
-        float evalBoard(Color c);
+    float evalBoard(Color c);
 
-        U64 flipVertical(U64 x);
+    U64 flipVertical(U64 x);
 
-    private:
-        U64 getRookMove(U64 loc, Color color);
-        U64 getBishopMove(U64 loc, Color color);
-        U64 getQueenMove(U64 loc, Color color);
-        U64 getKingMove(U64 loc, Color color);
-        U64 getPawnMove(U64 loc, Color color);
-        U64 getKnightMove(U64 loc, Color color);
+private:
+    U64 getRookMove(U64 loc, Color color);
+    U64 getBishopMove(U64 loc, Color color);
+    U64 getQueenMove(U64 loc, Color color);
+    U64 getKingMove(U64 loc, Color color);
+    U64 getPawnMove(U64 loc, Color color);
+    U64 getKnightMove(U64 loc, Color color);
 
-        U64 getActualRay(U64 loc, U64 ray, Color color);
+    U64 getActualRay(U64 loc, U64 ray, Color color);
 
-        int getBoard(char piece, Color color);
-        std::string boardToLoc(U64 board);
+    char handleCapture(U64 to, Color color, bool handleCastle);
 
-        int countBits(U64 i);
+    U64 &getBoard(char piece, Color color);
+    std::string boardToLoc(U64 board);
+
+    int countBits(U64 i);
+    U64 getWhitePieces();
+    U64 getBlackPieces();
+    void getAllMovesFromBoard(U64 board, char piece, Color color, std::vector<Move> &newMoves);
 };
 
 #endif

@@ -23,7 +23,10 @@ set(HEADERS
 )
 target_sources(${LIB_NAME} PRIVATE ${SOURCES} ${HEADERS})
 
-
 target_link_libraries(${LIB_NAME} PUBLIC glm::glm)
 
 install(TARGETS ${LIB_NAME})
+
+if(DEFINED BUILD_BOT_TEST_EXE)
+    add_executable(bot_test ${SOURCES} ${HEADERS} main.cpp)
+endif()

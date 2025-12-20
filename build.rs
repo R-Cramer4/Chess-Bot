@@ -3,6 +3,7 @@ use cmake;
 fn main() {
     let cmake = cmake::Config::new("src/board")
         .define("CMAKE_EXPORT_COMPILE_COMMANDS", "1")
+        .define("BUILD_BOT_TEST_EXE", "1")
         .always_configure(true)
         .build();
 

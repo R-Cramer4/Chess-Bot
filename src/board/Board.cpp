@@ -124,19 +124,26 @@ Color Board::generateBitBoards(string fen){
     fullMoves = stoi(otherInfo.substr(0, otherInfo.find(' ')));
 
     // sets up pieces
-    whitePieces = 0;
-    blackPieces = 0;
-    for(int i = 0; i < 6; i++){
-        whitePieces |= *boards[i].i;
-        blackPieces |= *boards[i + 6].i;
-    }
+    whitePieces = getWhitePieces();
+    blackPieces = getBlackPieces();
 
     return turn;
 }
 void Board::reset(std::string fen){
-    for(int i = 0; i < 12; i++){
-        *boards[i].i = 0;
-    }
+    whitePawns = 0;
+    whiteKnights = 0;
+    whiteBishops = 0;
+    whiteRooks = 0;
+    whiteQueens = 0;
+    whiteKing = 0;
+
+    blackPawns = 0;
+    blackKnights = 0;
+    blackBishops = 0;
+    blackRooks = 0;
+    blackQueens = 0;
+    blackKing = 0;
+    
     colorMask = 0;
     debugMask = 0;
 
@@ -157,46 +164,15 @@ void Board::reset(std::string fen){
         captures.pop();
     }
     generateBitBoards(fen);
-
 }
 
-Board::Board(Board &ref){
-    this->whitePawns = ref.whitePawns;
-    this->whiteKnights = ref.whiteKnights;
-    this->whiteBishops = ref.whiteBishops;
-    this->whiteRooks = ref.whiteRooks;
-    this->whiteQueens = ref.whiteQueens;
-    this->whiteKing = ref.whiteKing;
-
-    this->blackPawns = ref.blackPawns;
-    this->blackKnights = ref.blackKnights;
-    this->blackBishops = ref.blackBishops;
-    this->blackRooks = ref.blackRooks;
-    this->blackQueens = ref.blackQueens;
-    this->blackKing = ref.blackKing;
-
-    this->blackPieces = ref.blackPieces;
-    this->whitePieces = ref.whitePieces;
-
-    this->enpassantLoc = ref.enpassantLoc;
-
-    this->whiteCastleKing = ref.whiteCastleKing;
-    this->whiteCastleQueen = ref.whiteCastleQueen;
-    this->blackCastleKing = ref.blackCastleKing;
-    this->blackCastleQueen = ref.blackCastleQueen;
-
-    this->halfMoves = ref.halfMoves;
-    this->fullMoves = ref.fullMoves;
-    this->moves = ref.moves;
-    this->captures = ref.captures;
-
-    this->turn = ref.turn;
-}
 void Board::printLoc(U64 x){
     printf("0x%016llu\n", x);
 }
 
 void Board::printBoardState(){
+    printf("need to impelement");
+    /*
     for(int i = 0; i < 12; i++){
         cout << *boards[i].i << " : " << boards[i].piece << " " << boards[i].col << endl;
     }
@@ -204,6 +180,7 @@ void Board::printBoardState(){
     cout << halfMoves << " " << fullMoves << endl;
     cout << "Moves: " << moves.size() << endl;
     cout << "Cap: " << captures.size() << endl;
+        */
 }
 string Board::getMove(Move m){
     string move = "";
@@ -260,4 +237,52 @@ U64 Board::flipVertical(U64 x) {
             ((x >> 24) & rank3) |
             ((x >> 40) & rank2) |
             ((x >> 56));
+}
+U64 Board::getWhitePieces() {
+    return whitePawns
+        & whiteKnights
+        & whiteBishops
+        & whiteRooks
+        & whiteQueens
+        & whiteKing;
+}
+U64 Board::getBlackPieces() {
+    return blackPawns
+        & blackKnights
+        & blackBishops
+        & blackRooks
+        & blackQueens
+        & blackKing;
+}
+Board::Board(Board &ref) {
+    this->whitePawns = ref.whitePawns;
+    this->whiteKnights = ref.whiteKnights;
+    this->whiteBishops = ref.whiteBishops;
+    this->whiteRooks = ref.whiteRooks;
+    this->whiteQueens = ref.whiteQueens;
+    this->whiteKing = ref.whiteKing;
+
+    this->blackPawns = ref.blackPawns;
+    this->blackKnights = ref.blackKnights;
+    this->blackBishops = ref.blackBishops;
+    this->blackRooks = ref.blackRooks;
+    this->blackQueens = ref.blackQueens;
+    this->blackKing = ref.blackKing;
+
+    this->blackPieces = ref.blackPieces;
+    this->whitePieces = ref.whitePieces;
+
+    this->enpassantLoc = ref.enpassantLoc;
+
+    this->whiteCastleKing = ref.whiteCastleKing;
+    this->whiteCastleQueen = ref.whiteCastleQueen;
+    this->blackCastleKing = ref.blackCastleKing;
+    this->blackCastleQueen = ref.blackCastleQueen;
+
+    this->halfMoves = ref.halfMoves;
+    this->fullMoves = ref.fullMoves;
+    this->moves = ref.moves;
+    this->captures = ref.captures;
+
+    this->turn = ref.turn;
 }

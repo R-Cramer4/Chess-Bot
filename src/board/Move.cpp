@@ -260,19 +260,33 @@ U64 Board::getActualRay(U64 loc, U64 ray, Color color){
 
 int Board::isKingInCheck(Color color){
 
-    int board = (color == WHITE) ? 5 : 11;
-    U64 loc = *boards[board].i;
+    U64 loc, pawns, knights, bishops, rooks, queens, otherKing;
+    if (color == WHITE) {
+        loc = whiteKing;
+        pawns = blackPawns;
+        knights = blackKnights;
+        bishops = blackBishops;
+        rooks = blackRooks;
+        queens = blackQueens;
+        otherKing = blackKing;
+    } else {
+        loc = blackKing;
+        pawns = whitePawns;
+        knights = whiteKnights;
+        bishops = whiteBishops;
+        rooks = whiteRooks;
+        queens = whiteQueens;
+        otherKing = whiteKing;
+    }
 
     U64 rookRays = getRookMove(loc, color);
     U64 bishopRays = getBishopMove(loc, color);
 
-    int otherCol = (board == 5) ? 6 : 0;
-    if((rookRays & *boards[otherCol + 3].i)) return 3;
-    else if(bishopRays & *boards[otherCol + 2].i) return 2;
-    else if ((bishopRays | rookRays) & *boards[otherCol + 4].i) return 4;
+    if((rookRays & rooks)) return 3;
+    else if(bishopRays & bishops) return 2;
+    else if ((bishopRays | rookRays) & queens) return 4;
         // intersecting with any of the opponent sliding pieces
 
-    U64 knights = *boards[otherCol + 1].i;
     U64 knightFromKing = getKnightMove(loc, color);
     if(knights & knightFromKing) return true; 
     // knight putting in check
@@ -287,21 +301,98 @@ int Board::isKingInCheck(Color color){
     // masks out overflow bits
     sq = ((sq & 0x7) >> 2);
     kingMove &= (sq * (~abFile)) | (!sq * (~ghFile));
-    if(kingMove & *boards[otherCol + 5].i) return 5;
+    if(kingMove & otherKing) return 5;
     // king putting king in check
     
-    U64 pawns = *boards[otherCol].i;
     U64 mask = 0;
-    if(otherCol == 0){
+    if (color == BLACK) {
         mask |= ((pawns << 7) & ~hFile) | ((pawns << 9) & ~aFile);
-    }else{
+    } else {
         mask |= ((pawns >> 7) & ~aFile) | ((pawns >> 9) & ~hFile);
     }
     if(mask & loc) return 6;
+
     return 0;
     // intersection with pawns if true, otherwise not in check
 }
 
+char Board::handleCapture(U64 to, Color color, bool handleCastle) {
+    char castlingRights = 0;
+    if (color == WHITE) {
+        // capturing black pieces
+        blackPieces ^= to; // remove it
+        // else if blocks because you cant capture multiple pieces
+        if (blackPawns & to) {
+            blackPawns ^= to;
+            captures.push({'p', BLACK});
+        }
+        if (blackKnights & to) {
+            blackKnights ^= to;
+            captures.push({'n', BLACK});
+        }
+        if (blackBishops & to) {
+            blackBishops ^= to;
+            captures.push({'b', BLACK});
+        }
+        if (blackRooks & to) {
+            blackRooks ^= to;
+            captures.push({'r', BLACK});
+            if (handleCastle) {
+                if (blackCastleKing && (to == BKRook)) {
+                    castlingRights += 0b0010;
+                    blackCastleKing = 0;
+                } else if (blackCastleQueen && (to == BQRook)) {
+                    castlingRights += 0b0001;
+                    blackCastleQueen = 0;
+                }
+            }
+        }
+        if (blackQueens & to) {
+            blackQueens ^= to;
+            captures.push({'q', BLACK});
+        }
+        if (blackKing & to) {
+            blackKing ^= to;
+            captures.push({'k', BLACK});
+        }
+    } else {
+        whitePieces ^= to; // remove it
+        if (whitePawns & to) {
+            whitePawns ^= to;
+            captures.push({'p', WHITE});
+        }
+        if (whiteKnights & to) {
+            whiteKnights ^= to;
+            captures.push({'n', WHITE});
+        }
+        if (whiteBishops & to) {
+            whiteBishops ^= to;
+            captures.push({'b', WHITE});
+        } 
+        if (whiteRooks & to) {
+            whiteRooks ^= to;
+            captures.push({'r', WHITE});
+            if (handleCastle) {
+                if (whiteCastleKing && (to == WKRook)){
+                    castlingRights += 0b1000;
+                    whiteCastleKing = 0;
+                } else if (whiteCastleQueen && (to == WQRook)){
+                    castlingRights += 0b0100;
+                    whiteCastleQueen = 0;
+                }
+            }
+        }
+        if (whiteQueens & to) {
+            whiteQueens ^= to;
+            captures.push({'q', WHITE});
+        }
+        if (whiteKing & to) {
+            whiteKing ^= to;
+            captures.push({'k', WHITE});
+        }
+    }
+    return castlingRights;
+}
 Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     // cant go to the same place, or not have a color
     Move m;
@@ -312,52 +403,21 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     U64 oldEnpassant = enpassantLoc;
 
     // handle a capture
-    int col;
-    if(color == WHITE && (blackPieces & to)){
+    if (color == WHITE && (blackPieces & to)){
         // white captured a piece
-        blackPieces ^= to; // remove it
         special = 4; // capture
-        col = 6;
-    }else if(color == BLACK && (whitePieces & to)){
+    } else if (color == BLACK && (whitePieces & to)){
         // black captured a piece
-        whitePieces ^= to; // remove it
         special = 4; // capture
-        col = 0;
     }
-    if(special == 4){
-        for(int i = col; i < col + 6; i++){
-            if(*boards[i].i & to){
-                *boards[i].i ^= to; // remove the piece
-                // add to captures
-                captures.push({boards[i].piece, boards[i].col});
-                if(i == 3){
-                    // white rook
-                    if(whiteCastleKing && (to == WKRook)){
-                        castlingRights += 0b1000;
-                        whiteCastleKing = 0;
-                    }else if(whiteCastleQueen && (to == WQRook)){
-                        castlingRights += 0b0100;
-                        whiteCastleQueen = 0;
-                    }
-                }else if(i == 9){
-                    // black rook
-                    if(blackCastleKing && (to == BKRook)){
-                        castlingRights += 0b0010;
-                        blackCastleKing = 0;
-                    }else if(blackCastleQueen && (to == BQRook)){
-                        castlingRights += 0b0001;
-                        blackCastleQueen = 0;
-                    }
-                }
-                break;
-            }
-        }
+    if (special == 4){
+        castlingRights += handleCapture(to, color, true);
     }
 
-    int board = getBoard(piece, color);
+    U64 board = getBoard(piece, color);
     // move the piece
-    *boards[board].i ^= from;
-    *boards[board].i |= to;
+    board ^= from;
+    board |= to;
     // update piece boards
     if(color == WHITE){
         whitePieces ^= from;
@@ -371,18 +431,18 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
     switch (piece) {
         case 'p':
             // handle enpassant
-            if(to == enpassantLoc){
+            if (to == enpassantLoc) {
                 // has to be a capture by enpassant
                 special = 5;
-                if(color == WHITE){
+                if (color == WHITE){
                     // remove the captured pawn
-                    *boards[board + 6].i ^= (to >> 8);
+                    blackPawns ^= (to >> 8);
                     blackPieces ^= (to >> 8); // update mask
                     captures.push({'p', BLACK});
                     enpassantLoc = 0;
-                }else{
+                } else {
                     // remove the captured pawn
-                    *boards[board - 6].i ^= (to << 8);
+                    whitePawns ^= (to << 8);
                     whitePieces ^= (to << 8); // update mask
                     captures.push({'p', WHITE});
                     enpassantLoc = 0;
@@ -390,58 +450,58 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
                 }
             }
             // generate enpassant squares
-            else if(to == (from << 16)) enpassantLoc = (from << 8);
-            else if(to == (from >> 16)) enpassantLoc = (from >> 8);
+            else if (to == (from << 16)) enpassantLoc = (from << 8);
+            else if (to == (from >> 16)) enpassantLoc = (from >> 8);
             else enpassantLoc = 0;
 
             // pawn promo
-            if(to & rank1 || to & rank8) pawnPromo = to;
+            if (to & rank1 || to & rank8) pawnPromo = to;
             else pawnPromo = 0;
             break;
         case 'k':
             pawnPromo = 0;
             enpassantLoc = 0; // not a pawn move
             // handle castling
-            if(color == WHITE){
+            if (color == WHITE) {
                 // branchless
                 castlingRights += whiteCastleKing * 0b1000;
                 castlingRights += whiteCastleQueen * 0b0100;
                 whiteCastleQueen = 0;
                 whiteCastleKing = 0;
-            }else if(color == BLACK){
+            } else if (color == BLACK){
                 castlingRights += blackCastleKing * 0b0010;
                 castlingRights += blackCastleQueen * 0b0001;
                 blackCastleQueen = 0;
                 blackCastleKing = 0;
             }
-            if(to == from << 2){
+            if (to == from << 2){
                 // kingside
                 special = 2;
 
                 // just need to move rook, already moved king
-                if(color == WHITE){
-                    *boards[3].i ^= (U64)0x80;
+                if (color == WHITE){
+                    whiteRooks ^= (U64)0x80;
                     whitePieces ^= (U64)0x80;
-                    *boards[3].i |= (U64)0x20;
+                    whiteRooks |= (U64)0x20;
                     whitePieces |= (U64)0x20;
-                }else{
-                    *boards[9].i ^= 0x8000000000000000;
+                } else {
+                    blackRooks ^= 0x8000000000000000;
                     blackPieces ^= 0x8000000000000000;
-                    *boards[9].i |= 0x2000000000000000;
+                    blackRooks |= 0x2000000000000000;
                     blackPieces |= 0x2000000000000000;
                 }
             }else if(to == from >> 2){
                 special = 3;
                 // castling queenside 
                 if(color == WHITE){
-                    *boards[3].i ^= (U64)0x1;
+                    whiteRooks ^= (U64)0x1;
                     whitePieces ^= (U64)0x1;
-                    *boards[3].i |= (U64)0x8;
+                    whiteRooks |= (U64)0x8;
                     whitePieces |= (U64)0x8;
                 }else{
-                    *boards[9].i ^= 0x0100000000000000;
+                    blackRooks ^= 0x0100000000000000;
                     blackPieces ^= 0x0100000000000000;
-                    *boards[9].i |= 0x0800000000000000;
+                    blackRooks |= 0x0800000000000000;
                     blackPieces |= 0x0800000000000000;
                 }
             }
@@ -489,14 +549,14 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
 }
 void Board::movePiece(Move move){
     if(move.to == 0) return;
-    int board = getBoard(move.piece, move.color);
+    U64 board = getBoard(move.piece, move.color);
 
     // add to moves
     moves.push(move);
 
     // move piece
-    *boards[board].i ^= move.from;
-    *boards[board].i |= move.to;
+    board ^= move.from;
+    board |= move.to;
 
     // update bitboards
     if(move.color == WHITE){
@@ -521,105 +581,93 @@ void Board::movePiece(Move move){
         pawnPromo = 0;
     }
 
-    if(move.special == 2){
+    if (move.special == 2) {
         // kingside castle
         if(move.color == WHITE){
-            *boards[3].i ^= (U64)0x80;
+            whiteRooks ^= (U64)0x80;
             whitePieces ^= (U64)0x80;
-            *boards[3].i |= (U64)0x20;
+            whiteRooks |= (U64)0x20;
             whitePieces |= (U64)0x20;
         }else{
-            *boards[9].i ^= 0x8000000000000000;
+            blackRooks ^= 0x8000000000000000;
             blackPieces ^= 0x8000000000000000;
-            *boards[9].i |= 0x2000000000000000;
+            blackRooks |= 0x2000000000000000;
             blackPieces |= 0x2000000000000000;
         }
-    }else if(move.special == 3){
+    } else if (move.special == 3) {
         // queenside castle
-        if(move.color == WHITE){
-            *boards[3].i ^= (U64)0x1;
+        if (move.color == WHITE) {
+            whiteRooks ^= (U64)0x1;
             whitePieces ^= (U64)0x1;
-            *boards[3].i |= (U64)0x8;
+            whiteRooks |= (U64)0x8;
             whitePieces |= (U64)0x8;
-        }else{
-            *boards[9].i ^= 0x0100000000000000;
+        } else {
+            blackRooks ^= 0x0100000000000000;
             blackPieces ^= 0x0100000000000000;
-            *boards[9].i |= 0x0800000000000000;
+            blackRooks |= 0x0800000000000000;
             blackPieces |= 0x0800000000000000;
         }
-    }else if(move.special == 4){
+    } else if (move.special == 4) {
         // find the capture
-        int col;
-        if(move.color == WHITE){
-            col = 6;
-            blackPieces ^= move.to;
-        }else{
-            col = 0;
-            whitePieces ^= move.to;
-        }
-        for(int i = col; i < col + 6; i++){
-            if(*boards[i].i & move.to){
-                *boards[i].i ^= move.to; // remove the piece
-                // add to captures
-                captures.push({boards[i].piece, boards[i].col});
-                break;
-            }
-        }
-    }else if(move.special == 5){
+        handleCapture(move.to, move.color, false);
+
+    } else if (move.special == 5) {
         // enpassant capture
         if(move.color == WHITE){
-            *boards[6].i ^= (move.to >> 8); // remove black pawn
+            blackPawns ^= (move.to >> 8); // remove black pawn
             blackPieces ^= (move.to >> 8);
             captures.push({'p', BLACK});
         }else{
-            *boards[0].i ^= (move.to << 8); // remove white pawn
+            whitePawns ^= (move.to << 8); // remove white pawn
             whitePieces ^= (move.to << 8);
             captures.push({'p', WHITE});
         }
         enpassantLoc = 0;
-    }else if(move.special >= 8){ // promotion
+    } else if (move.special >= 8) { // promotion
         // we moved the pawn earlier, so need to delete it again
-        *boards[board].i ^= move.to; // one less pawn
+        board ^= move.to; // one less pawn
         // dont need to update colored boards because adding a new piece there
         if(move.special >= 12){
             // promo with capture
-            int col;
-            if(move.color == WHITE){
-                col = 6;
-                blackPieces ^= move.to;
-            }else{
-                col = 0;
-                whitePieces ^= move.to;
-            }
-            for(int i = col; i < col + 6; i++){
-                if(*boards[i].i & move.to){
-                    *boards[i].i ^= move.to; // remove the piece
-                    // add to captures
-                    captures.push({boards[i].piece, boards[i].col});
-                    break;
-                }
-            }
+            handleCapture(move.to, move.color, false);
         }
         switch(move.special){
             case 8:
             case 12:
                 // knight
-                *boards[board + 1].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteKnights ^= move.to;
+                } else {
+                    blackKnights ^= move.to;
+                }
                 break;
             case 9:
             case 13:
                 // bishop
-                *boards[board + 2].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteBishops ^= move.to;
+                } else {
+                    blackBishops ^= move.to;
+                }
                 break;
             case 10:
             case 14:
                 // rook
-                *boards[board + 3].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteRooks ^= move.to;
+                } else {
+                    blackRooks ^= move.to;
+                }
                 break;
             case 11:
             case 15:
                 // queen
-                *boards[board + 4].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteQueens ^= move.to;
+                } else {
+                    blackQueens ^= move.to;
+                }
+                break;
         }
     }
 
@@ -658,10 +706,10 @@ void Board::unMovePiece(){
     
     enpassantLoc = move.enpassant;
     pawnPromo = 0;
-    int board = getBoard(move.piece, move.color);
+    U64 board = getBoard(move.piece, move.color);
     // move the piece back
-    *boards[board].i ^= move.to; // delete old piece
-    *boards[board].i |= move.from; // put in old place
+    board ^= move.to; // delete old piece
+    board |= move.from; // put in old place
     // update color masks
     if(move.color == WHITE){
         whitePieces ^= move.to;
@@ -675,51 +723,51 @@ void Board::unMovePiece(){
         // kingside castle
         // just need to move rook
         if(move.color == WHITE){
-            *boards[3].i ^= (U64)0x20;
+            whiteRooks ^= (U64)0x20;
             whitePieces ^= (U64)0x20;
-            *boards[3].i |= (U64)0x80;
+            whiteRooks |= (U64)0x80;
             whitePieces |= (U64)0x80;
         }else{
-            *boards[9].i ^= 0x2000000000000000;
+            blackRooks ^= 0x2000000000000000;
             blackPieces ^= 0x2000000000000000;
-            *boards[9].i |= 0x8000000000000000;
+            blackRooks |= 0x8000000000000000;
             blackPieces |= 0x8000000000000000;
         }
     }else if(move.special == 3){
         // queenside castle
         if(move.color == WHITE){
-            *boards[3].i ^= (U64)0x8;
+            whiteRooks ^= (U64)0x8;
             whitePieces ^= (U64)0x8;
-            *boards[3].i |= (U64)0x1;
+            whiteRooks |= (U64)0x1;
             whitePieces |= (U64)0x1;
         }else{
-            *boards[9].i ^= 0x0800000000000000;
+            blackRooks ^= 0x0800000000000000;
             blackPieces ^= 0x0800000000000000;
-            *boards[9].i |= 0x0100000000000000;
+            blackRooks |= 0x0100000000000000;
             blackPieces |= 0x0100000000000000;
         }
     }else if(move.special == 4){
         // capture
         auto piece = captures.top();
         captures.pop(); // gets last captured piece
-        int capBoard = getBoard(piece.first, piece.second);
-        *boards[capBoard].i |= move.to;
+        U64 capBoard = getBoard(piece.first, piece.second);
+        capBoard |= move.to;
         if(move.color == WHITE) blackPieces |= move.to;
         else whitePieces |= move.to;
     }else if(move.special == 5){
         // enpassant capture
         auto piece = captures.top();
         captures.pop(); // gets last captured piece
-        int capBoard = getBoard(piece.first, piece.second);
+        U64 capBoard = getBoard(piece.first, piece.second);
 
         enpassantLoc = move.to; // where the pawn went
         // put the pieces back
         if(piece.second == BLACK){
-            *boards[capBoard].i |= (move.to >> 8);
+            capBoard |= (move.to >> 8);
             blackPieces |= (move.to >> 8);
         }
         else{
-            *boards[capBoard].i |= (move.to << 8);
+            capBoard |= (move.to << 8);
             whitePieces |= (move.to << 8);
         }
     }else if(move.special >= 8){
@@ -730,17 +778,16 @@ void Board::unMovePiece(){
             auto piece = captures.top();
             captures.pop();
             // get last captured piece
-            int capBoard = getBoard(piece.first, piece.second);
+            U64 capBoard = getBoard(piece.first, piece.second);
             // for normal captures
-            *boards[capBoard].i |= move.to; // change captured piece
+            capBoard |= move.to; // change captured piece
             if(piece.second == WHITE) whitePieces |= move.to;
             else blackPieces |= move.to;
             // updates bitboards
         }
         
         // this was a pawn move
-        *boards[board].i ^= move.to; // un delete old piece(wasnt there)
-        int col = (move.color == WHITE) ? 0 : 6;
+        board ^= move.to; // un delete old piece(wasnt there)
         // there was a piece there (the promo piece) so dont need to
         // update any bitboards
 
@@ -749,22 +796,38 @@ void Board::unMovePiece(){
             case 8:
             case 12:
                 // knight
-                *boards[1 + col].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteKnights ^= move.to;
+                } else {
+                    blackKnights ^= move.to;
+                }
                 break;
             case 9:
             case 13:
                 // bishop
-                *boards[2 + col].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteBishops ^= move.to;
+                } else {
+                    blackBishops ^= move.to;
+                }
                 break;
             case 10:
             case 14:
                 // rook
-                *boards[3 + col].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteRooks ^= move.to;
+                } else {
+                    blackRooks ^= move.to;
+                }
                 break;
             case 11:
             case 15:
                 // queen
-                *boards[4 + col].i ^= move.to;
+                if (move.color == WHITE) {
+                    whiteQueens ^= move.to;
+                } else {
+                    blackQueens ^= move.to;
+                }
                 break;
         }
     }
@@ -777,9 +840,8 @@ void Board::unMovePiece(){
 }
 void Board::promotePawn(U64 loc, Color color, char to){
     // loc is the pawn to promote
-    int board = 0;
-    if(color == BLACK) board = 6;
-    *boards[board].i ^= loc; // removes the pawn
+    U64 board = color == WHITE ? whitePawns : blackPawns;
+    board ^= loc; // removes the pawn
     int cap = 0;
 
     auto move = moves.top();
@@ -787,19 +849,31 @@ void Board::promotePawn(U64 loc, Color color, char to){
     moves.pop();
     switch (to) {
         case 'n':
-            *boards[board + 1].i ^= loc; // adds the piece
+            if (color == WHITE)
+                whiteKnights ^= loc;
+            else
+                blackKnights ^= loc;
             move.special = 8 + cap;
             break;
         case 'b':
-            *boards[board + 2].i ^= loc;
+            if (color == WHITE)
+                whiteBishops ^= loc;
+            else
+                blackBishops ^= loc;
             move.special = 9 + cap;
             break;
         case 'r':
-            *boards[board + 3].i ^= loc;
+            if (color == WHITE)
+                whiteRooks ^= loc;
+            else
+                blackRooks ^= loc;
             move.special = 10 + cap;
             break;
         case 'q':
-            *boards[board + 4].i ^= loc;
+            if (color == WHITE)
+                whiteQueens ^= loc;
+            else
+                blackQueens ^= loc;
             move.special = 11 + cap;
             break;
     }
@@ -817,34 +891,34 @@ int Board::isGameOver(bool act){
     // 6 = stalemate by repitition
 
     // no kings left
-    if(*boards[5].i == 0) return 2;
-    if(*boards[11].i == 0) return 1;
+    if(whiteKing == 0) return 2;
+    if(blackKing == 0) return 1;
     if(!act) return 0;
 
     U64 pieces = blackPieces | whitePieces; // doesn't include kings
-    pieces ^= *boards[5].i;
-    pieces ^= *boards[11].i; // removes both kings
+    pieces ^= whiteKing;
+    pieces ^= blackKing; // removes both kings
 
     // insufficint material
     if(pieces == 0) return 4; // just kings
     // kings + 1 bishop
     // isolates the LSB and gets rid of it to check for only 1 piece
-    if((pieces == *boards[2].i && 
-            (*boards[2].i ^ (*boards[2].i & -*boards[2].i)) == 0) || 
-        (pieces == *boards[8].i && 
-            (*boards[8].i ^ (*boards[8].i & -*boards[8].i)) == 0)) return 4; 
+    if((pieces == whiteBishops && 
+            (whiteBishops ^ (whiteBishops & -whiteBishops)) == 0) || 
+        (pieces == blackBishops && 
+            (blackBishops ^ (blackBishops & -blackBishops)) == 0)) return 4; 
 
     // kings + 1 knight
     // kings + 2 knights of same color
-    if(pieces == *boards[1].i){
-        U64 temp = *boards[1].i;
+    if(pieces == whiteKnights){
+        U64 temp = whiteKnights;
         temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
         temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
     }
-    if(pieces == *boards[7].i){
-        U64 temp = *boards[7].i;
+    if(pieces == blackKnights){
+        U64 temp = blackKnights;
         temp = temp ^ (temp & -temp);
         if(temp == 0) return 4;
         temp = temp ^ (temp & -temp);
@@ -897,29 +971,29 @@ int Board::isGameOver(bool act){
     return state;
 }
 
-int Board::getBoard(char piece, Color color){
+U64 &Board::getBoard(char piece, Color color){
     int board = 0;
     switch (piece){
         case 'p':
-            board = 0;
+            return color == WHITE ? whitePawns : blackPawns;
             break;
         case 'n':
-            board = 1;
+            return color == WHITE ? whiteKnights : blackKnights;
             break;
         case 'b':
-            board = 2;
+            return color == WHITE ? whiteBishops : blackBishops;
             break;
         case 'r':
-            board = 3;
+            return color == WHITE ? whiteRooks : blackRooks;
             break;
         case 'q':
-            board = 4;
+            return color == WHITE ? whiteQueens : blackQueens;
             break;
         case 'k':
-            board = 5;
+            return color == WHITE ? whiteKing : blackKing;
             break;
     }
-    return board + (6 * (color == BLACK));
+    return debugMask;
 }
 
 
@@ -941,28 +1015,41 @@ int Board::getLSLoc(U64 mask) {
 }
 
 
+void Board::getAllMovesFromBoard(U64 board, char piece, Color color, std::vector<Move> &newMoves) {
+    if (color != turn) return;
+    
+    U64 locMask = board;
+    while(locMask != 0){
+        U64 loc = (locMask & -locMask); // isolates least significant bit
+        locMask ^= loc; // remove it
+
+        // there is a piece at loc
+        Move moves[256];
+        U64 len = generateMoves(loc, piece, color, true, moves);
+        // has all moves of this piece
+        if(len == 0) continue;
+        for(int i = 0; i < len; i++){
+            if(moves[i].from == 0) continue;
+            newMoves.push_back(moves[i]);
+        }
+    }
+}
 std::vector<Move> Board::getAllMoves(){
     std::vector<Move> newMoves;
 
-    for(int i = 0; i < 12; i++){
-        if(boards[i].col != turn) continue;
-        // loop through each bitboard
-        U64 locMask = *boards[i].i;
-        while(locMask != 0){
-            U64 loc = (locMask & -locMask); // isolates least significant bit
-            locMask ^= loc; // remove it
+    getAllMovesFromBoard(whitePawns, 'p', WHITE, newMoves);
+    getAllMovesFromBoard(whiteKnights, 'n', WHITE, newMoves);
+    getAllMovesFromBoard(whiteBishops, 'b', WHITE, newMoves);
+    getAllMovesFromBoard(whiteRooks, 'r', WHITE, newMoves);
+    getAllMovesFromBoard(whiteQueens, 'q', WHITE, newMoves);
+    getAllMovesFromBoard(whiteKing, 'k', WHITE, newMoves);
 
-            // there is a piece at loc
-            Move moves[256];
-            U64 len = generateMoves(loc, boards[i].piece, boards[i].col, true, moves);
-            // has all moves of this piece
-            if(len == 0) continue;
-            for(int i = 0; i < len; i++){
-                if(moves[i].from == 0) continue;
-                newMoves.push_back(moves[i]);
-            }
-        }
-    }
+    getAllMovesFromBoard(blackPawns, 'p', BLACK, newMoves);
+    getAllMovesFromBoard(blackKnights, 'n', BLACK, newMoves);
+    getAllMovesFromBoard(blackBishops, 'b', BLACK, newMoves);
+    getAllMovesFromBoard(blackRooks, 'r', BLACK, newMoves);
+    getAllMovesFromBoard(blackQueens, 'q', BLACK, newMoves);
+    getAllMovesFromBoard(blackKing, 'k', BLACK, newMoves);
 
     return newMoves;
 }

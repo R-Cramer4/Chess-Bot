@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include "Board.hpp"
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 Game::Game(string fen, int num){
@@ -61,37 +62,50 @@ bool Game::handleClick(int x) {
         // clicked somewhere not in the mask already
 
         *selectedPiece.i = 0; // sets to be 0 if not already
-        for(int i = 0; i < 12; i++){
-            if(bitboard.boards[i].col == bitboard.turn && 
-                *bitboard.boards[i].i == (*bitboard.boards[i].i | loc)){
+        auto findMoves = [this, loc](U64 board, char piece, Color color) {
+            if (color == bitboard.turn && 
+                board == (board | loc)){
 
                 // update the selected piece
                 *selectedPiece.i = loc;
-                selectedPiece.piece = bitboard.boards[i].piece;
-                selectedPiece.col = bitboard.boards[i].col;
+                selectedPiece.piece = piece;
+                selectedPiece.col = color;
 
                 // If the piece bitboard | loc, this bitboard has been clicked
-                for(int i = 0; i < 256; i++) potentialMoves[i].from = 0; // nulls all old moves
-                U64 len = bitboard.generateMoves(loc, bitboard.boards[i].piece, 
-                                                 bitboard.boards[i].col, true, potentialMoves);
+                std::memset(potentialMoves, 0, 256); // nulls all old moves
+                U64 len = bitboard.generateMoves(loc, piece, color, true, potentialMoves);
                 for(int i = 0; i < len; i++){
                     if(potentialMoves[i].from) bitboard.colorMask |= potentialMoves[i].to;
                 }
                 bitboard.colorMask |= loc;
             }
-        }
+        };
+
+        findMoves(bitboard.whitePawns, 'p', WHITE);
+        findMoves(bitboard.whiteKnights, 'n', WHITE);
+        findMoves(bitboard.whiteBishops, 'b', WHITE);
+        findMoves(bitboard.whiteRooks, 'r', WHITE);
+        findMoves(bitboard.whiteQueens, 'q', WHITE);
+        findMoves(bitboard.whiteKing, 'k', WHITE);
+        findMoves(bitboard.blackPawns, 'p', BLACK);
+        findMoves(bitboard.blackKnights, 'n', BLACK);
+        findMoves(bitboard.blackBishops, 'b', BLACK);
+        findMoves(bitboard.blackRooks, 'r', BLACK);
+        findMoves(bitboard.blackQueens, 'q', BLACK);
+        findMoves(bitboard.blackKing, 'k', BLACK);
+
         if(*selectedPiece.i == 0) bitboard.colorMask = loc;
     }
 
     // opponent move
-    // if(bitboard.turn == opp.c && !bitboard.pawnPromo) opp.takeTurn(bitboard);
+    if(bitboard.turn == opp.c && !bitboard.pawnPromo) opp.takeTurn(bitboard);
 
 
     if(bitboard.isGameOver(true) != 0) return false;
-    if(*bitboard.boards[5].i == 0){
+    if (bitboard.whiteKing == 0) {
         cout << "Black wins" << endl;
         return false;
-    }else if(*bitboard.boards[11].i == 0){
+    } else if (bitboard.blackKing == 0) {
         cout << "White wins" << endl;
         return false;
     }
