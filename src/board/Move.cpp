@@ -318,6 +318,8 @@ int Board::isKingInCheck(Color color){
 
 char Board::handleCapture(U64 to, Color color, bool handleCastle) {
     char castlingRights = 0;
+    // assert(whitePieces == getWhitePieces());
+    // assert(blackPieces == getBlackPieces());
     if (color == WHITE) {
         // capturing black pieces
         blackPieces ^= to; // remove it
@@ -414,10 +416,10 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
         castlingRights += handleCapture(to, color, true);
     }
 
-    U64 board = getBoard(piece, color);
+    U64 *board = getBoard(piece, color);
     // move the piece
-    board ^= from;
-    board |= to;
+    *board ^= from;
+    *board |= to;
     // update piece boards
     if(color == WHITE){
         whitePieces ^= from;
@@ -549,14 +551,14 @@ Move Board::movePiece(U64 from, Color color, char piece, U64 to){
 }
 void Board::movePiece(Move move){
     if(move.to == 0) return;
-    U64 board = getBoard(move.piece, move.color);
+    U64 *board = getBoard(move.piece, move.color);
 
     // add to moves
     moves.push(move);
 
     // move piece
-    board ^= move.from;
-    board |= move.to;
+    *board ^= move.from;
+    *board |= move.to;
 
     // update bitboards
     if(move.color == WHITE){
@@ -625,7 +627,7 @@ void Board::movePiece(Move move){
         enpassantLoc = 0;
     } else if (move.special >= 8) { // promotion
         // we moved the pawn earlier, so need to delete it again
-        board ^= move.to; // one less pawn
+        *board ^= move.to; // one less pawn
         // dont need to update colored boards because adding a new piece there
         if(move.special >= 12){
             // promo with capture
@@ -706,10 +708,10 @@ void Board::unMovePiece(){
     
     enpassantLoc = move.enpassant;
     pawnPromo = 0;
-    U64 board = getBoard(move.piece, move.color);
+    U64 *board = getBoard(move.piece, move.color);
     // move the piece back
-    board ^= move.to; // delete old piece
-    board |= move.from; // put in old place
+    *board ^= move.to; // delete old piece
+    *board |= move.from; // put in old place
     // update color masks
     if(move.color == WHITE){
         whitePieces ^= move.to;
@@ -750,24 +752,24 @@ void Board::unMovePiece(){
         // capture
         auto piece = captures.top();
         captures.pop(); // gets last captured piece
-        U64 capBoard = getBoard(piece.first, piece.second);
-        capBoard |= move.to;
+        U64 *capBoard = getBoard(piece.first, piece.second);
+        *capBoard |= move.to;
         if(move.color == WHITE) blackPieces |= move.to;
         else whitePieces |= move.to;
     }else if(move.special == 5){
         // enpassant capture
         auto piece = captures.top();
         captures.pop(); // gets last captured piece
-        U64 capBoard = getBoard(piece.first, piece.second);
+        U64 *capBoard = getBoard(piece.first, piece.second);
 
         enpassantLoc = move.to; // where the pawn went
         // put the pieces back
         if(piece.second == BLACK){
-            capBoard |= (move.to >> 8);
+            *capBoard |= (move.to >> 8);
             blackPieces |= (move.to >> 8);
         }
         else{
-            capBoard |= (move.to << 8);
+            *capBoard |= (move.to << 8);
             whitePieces |= (move.to << 8);
         }
     }else if(move.special >= 8){
@@ -778,16 +780,16 @@ void Board::unMovePiece(){
             auto piece = captures.top();
             captures.pop();
             // get last captured piece
-            U64 capBoard = getBoard(piece.first, piece.second);
+            U64 *capBoard = getBoard(piece.first, piece.second);
             // for normal captures
-            capBoard |= move.to; // change captured piece
+            *capBoard |= move.to; // change captured piece
             if(piece.second == WHITE) whitePieces |= move.to;
             else blackPieces |= move.to;
             // updates bitboards
         }
         
         // this was a pawn move
-        board ^= move.to; // un delete old piece(wasnt there)
+        *board ^= move.to; // un delete old piece(wasnt there)
         // there was a piece there (the promo piece) so dont need to
         // update any bitboards
 
@@ -840,8 +842,8 @@ void Board::unMovePiece(){
 }
 void Board::promotePawn(U64 loc, Color color, char to){
     // loc is the pawn to promote
-    U64 board = color == WHITE ? whitePawns : blackPawns;
-    board ^= loc; // removes the pawn
+    U64 *board = color == WHITE ? &whitePawns : &blackPawns;
+    *board ^= loc; // removes the pawn
     int cap = 0;
 
     auto move = moves.top();
@@ -971,29 +973,29 @@ int Board::isGameOver(bool act){
     return state;
 }
 
-U64 &Board::getBoard(char piece, Color color){
+U64 *Board::getBoard(char piece, Color color){
     int board = 0;
     switch (piece){
         case 'p':
-            return color == WHITE ? whitePawns : blackPawns;
+            return color == WHITE ? &whitePawns : &blackPawns;
             break;
         case 'n':
-            return color == WHITE ? whiteKnights : blackKnights;
+            return color == WHITE ? &whiteKnights : &blackKnights;
             break;
         case 'b':
-            return color == WHITE ? whiteBishops : blackBishops;
+            return color == WHITE ? &whiteBishops : &blackBishops;
             break;
         case 'r':
-            return color == WHITE ? whiteRooks : blackRooks;
+            return color == WHITE ? &whiteRooks : &blackRooks;
             break;
         case 'q':
-            return color == WHITE ? whiteQueens : blackQueens;
+            return color == WHITE ? &whiteQueens : &blackQueens;
             break;
         case 'k':
-            return color == WHITE ? whiteKing : blackKing;
+            return color == WHITE ? &whiteKing : &blackKing;
             break;
     }
-    return debugMask;
+    return nullptr;
 }
 
 

@@ -6,7 +6,6 @@
 #include <vector>
 #include "Masks.hpp"
 
-
 struct quad{
     U64* i;
     Color col;
@@ -99,7 +98,7 @@ public:
     Color turn = WHITE;
 
     Board() = default;
-    Board(Board &ref);
+    //Board(Board &ref);
 
     Color generateBitBoards(std::string fen); // takes a string in with fen notation to setup the bitboards, init string usually
     void reset(std::string fen); // resets everything with new fen
@@ -138,7 +137,7 @@ private:
 
     char handleCapture(U64 to, Color color, bool handleCastle);
 
-    U64 &getBoard(char piece, Color color);
+    U64 *getBoard(char piece, Color color);
     std::string boardToLoc(U64 board);
 
     int countBits(U64 i);

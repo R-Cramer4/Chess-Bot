@@ -240,20 +240,21 @@ U64 Board::flipVertical(U64 x) {
 }
 U64 Board::getWhitePieces() {
     return whitePawns
-        & whiteKnights
-        & whiteBishops
-        & whiteRooks
-        & whiteQueens
-        & whiteKing;
+        | whiteKnights
+        | whiteBishops
+        | whiteRooks
+        | whiteQueens
+        | whiteKing;
 }
 U64 Board::getBlackPieces() {
     return blackPawns
-        & blackKnights
-        & blackBishops
-        & blackRooks
-        & blackQueens
-        & blackKing;
+        | blackKnights
+        | blackBishops
+        | blackRooks
+        | blackQueens
+        | blackKing;
 }
+/*
 Board::Board(Board &ref) {
     this->whitePawns = ref.whitePawns;
     this->whiteKnights = ref.whiteKnights;
@@ -286,3 +287,4 @@ Board::Board(Board &ref) {
 
     this->turn = ref.turn;
 }
+*/
